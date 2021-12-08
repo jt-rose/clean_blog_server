@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/go-redis/redis/v8"
+
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/jt-rose/clean_blog_server/graph"
@@ -49,6 +51,25 @@ func main() {
 	err = dbpool.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	rdb := redis.NewClient(&redis.Options{
+        Addr:     "localhost:6379",
+        Password: "", // no password set
+        DB:       0,  // use default DB
+    })
+
+	pong, err := rdb.Ping(context.Background()).Result()
+	if err != nil {
+		fmt.Println("Error: Redis connection failed")
+	} else {
+		fmt.Println(pong + " Redis connected")
+	}
+
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Redis connection failed: %v\n", err)
 		os.Exit(1)
 	}
 
