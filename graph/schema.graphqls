@@ -55,6 +55,9 @@ type Query {
   getPost(postID: Int!): Post!
   getManyPosts(postIDs: [Int!]!): [Post!]!
   getComments(postID: Int!): [Comment!]! # field resolver
+  # authentication:
+  me(userID: Int!): Boolean! # authenticate signed in user
+  isAuthor(userID: Int!): Boolean! # authenticate author
 }
 
 input PostInput {
@@ -72,4 +75,10 @@ type Mutation {
   deleteComment(commentID: Int!): Boolean!
   voteOnPost(postID: Int!, voteValue: Int!): PostVote!
   voteOnComment(commentID: Int!, voteValue: Int!): CommentVote!
+  # authentication:
+  registerNewUser(): User!
+  login(username: String!, password: String!): User!
+  logout(): Boolean!
+  forgotPassword(username: String!): Boolean!
+  resetPassword(username: string!, newPassword: String!): User!
 }
