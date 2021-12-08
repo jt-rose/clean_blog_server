@@ -51,7 +51,6 @@ type Comment {
   postID: Int!
   userID: Int!
   user: User! ## field resolver
-  title: String!
   text: String!
   date_posted: Date!
   votes: Votes! ## field resolver
