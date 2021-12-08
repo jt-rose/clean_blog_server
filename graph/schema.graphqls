@@ -1,28 +1,75 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
-
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
+#### GRAPHQL SDL ####
+type User {
+  userID: Int! ## SQL generated PK
+  username: String!
+  email: String!
+  ## password - not shared via graphql
+  posts: [Post]
+  date_joined: Date!
 }
 
-type User {
-  id: ID!
-  name: String!
+# Votes is a calculated object returning the up and down votes for either
+# a post or a comment
+type Votes {
+  upvote: Int!
+  downvote: Int!
+}
+
+# tracked vote record for particular posts. Maps to SQL Many to Many relationship.
+type PostVote {
+  postID: Int!
+  voteValue: Int! # -1 or 1
+  userID: Int!
+}
+
+type Post {
+  postID: Int!
+  user: User # field resolver
+  title: String!
+  subTitle: String ## optional
+  text: String! ## will store a JSON-serialized version of the HTML markup
+  date_posted: Date!
+  votes: Votes! ## field resolver
+}
+
+# tracked vote record for particular comments. Maps to SQL Many to Many relationship.
+type CommentVote {
+  commentID: Int!
+  voteValue: Int! # -1 or 1
+  userID: Int!
+}
+
+type Comment {
+  commentID: Int!
+  responseToCommentID: Int! # used when one comment is in response to another comment, nesting it
+  postID: Int!
+  userID: Int!
+  user: User! ## field resolver
+  title: String!
+  text: String!
+  date_posted: Date!
+  votes: Votes! ## field resolver
 }
 
 type Query {
-  todos: [Todo!]!
+  getPost(postID: Int!): Post!
+  getManyPosts(postIDs: [Int!]!): [Post!]!
+  getComments(postID: Int!): [Comment!]! # field resolver
 }
 
-input NewTodo {
+input PostInput {
+  title: String!
+  subTitle: String
   text: String!
-  userId: String!
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  addPost(postInput: PostInput!): Post!
+  editPost(postID: Int!, postInput: PostInput!): Post!
+  deletePost(postID: Int!): Boolean!
+  addComment(postID: Int!, responseToCommentID: Int, comment: String!): Comment!
+  editComment(commentID: Int!, newComment: String!): Comment!
+  deleteComment(commentID: Int!): Boolean!
+  voteOnPost(postID: Int!, voteValue: Int!): PostVote!
+  voteOnComment(commentID: Int!, voteValue: Int!): CommentVote!
 }
