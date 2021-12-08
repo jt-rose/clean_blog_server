@@ -33,7 +33,7 @@ type Post {
   user: User # field resolver
   title: String!
   subTitle: String ## optional
-  text: String! ## will store a JSON-serialized version of the HTML markup
+  post_text: String! ## will store a JSON-serialized version of the HTML markup
   date_posted: Date!
   votes: Votes! ## field resolver
 }
@@ -51,7 +51,7 @@ type Comment {
   postID: Int!
   userID: Int!
   user: User! ## field resolver
-  text: String!
+  comment_text: String!
   date_posted: Date!
   votes: Votes! ## field resolver
 }
