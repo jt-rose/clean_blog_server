@@ -2,6 +2,7 @@ package initDB
 
 import (
 	"context"
+	_ "database/sql"
 	"fmt"
 	"os"
 

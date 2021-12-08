@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	_ "database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,15 +9,14 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/go-redis/redis/v8"
-
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/jt-rose/clean_blog_server/graph"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 
 	// local imports
-	initDB "github.com/jt-rose/clean_blog_server/database"
+	initDB "github.com/jt-rose/clean_blog_server/database/initDB"
+	initRedis "github.com/jt-rose/clean_blog_server/database/initRedis"
 )
 
 const defaultServerPort = "8080"
@@ -37,28 +35,21 @@ func main() {
 	dbpool := initDB.InitDB()
 	defer dbpool.Close()
 
+	// remove later
 	err = dbpool.Ping(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
+	rdb := initRedis.InitRedis()
+	// remove later
 	pong, err := rdb.Ping(context.Background()).Result()
-	if err != nil {
-		fmt.Println("Error: Redis connection failed")
-	} else {
-		fmt.Println(pong + " Redis connected")
-	}
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Redis connection failed: %v\n", err)
 		os.Exit(1)
+	} else {
+		fmt.Println(pong + " Redis connected")
 	}
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
