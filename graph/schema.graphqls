@@ -8,6 +8,12 @@ type User {
   date_joined: Date!
 }
 
+input UserInput {
+  username: String!
+  email: String!
+  password: String!
+}
+
 # Votes is a calculated object returning the up and down votes for either
 # a post or a comment
 type Votes {
@@ -76,7 +82,7 @@ type Mutation {
   voteOnPost(postID: Int!, voteValue: Int!): PostVote!
   voteOnComment(commentID: Int!, voteValue: Int!): CommentVote!
   # authentication:
-  registerNewUser(): User!
+  registerNewUser(userInput: UserInput!): User!
   login(username: String!, password: String!): User!
   logout(): Boolean!
   forgotPassword(username: String!): Boolean!
