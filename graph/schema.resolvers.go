@@ -31,11 +31,11 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, er
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseToCommentID *int, comment string) (*model.Comment, error) {
+func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseToCommentID *int, commentText string) (*model.Comment, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) EditComment(ctx context.Context, commentID int, newComment string) (*model.Comment, error) {
+func (r *mutationResolver) EditComment(ctx context.Context, commentID int, newCommentText string) (*model.Comment, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -83,7 +83,7 @@ func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, e
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) GetManyPosts(ctx context.Context, postIDs []int) ([]*model.Post, error) {
+func (r *queryResolver) GetManyPosts(ctx context.Context, postIds []int) ([]*model.Post, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

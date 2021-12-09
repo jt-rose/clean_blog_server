@@ -7,27 +7,27 @@ import (
 )
 
 type Comment struct {
-	CommentID           int       `json:"commentID"`
-	ResponseToCommentID int       `json:"responseToCommentID"`
-	PostID              int       `json:"postID"`
-	UserID              int       `json:"userID"`
+	CommentID           int       `json:"comment_id"`
+	ResponseToCommentID int       `json:"response_to_comment_id"`
+	PostID              int       `json:"post_id"`
+	UserID              int       `json:"user_id"`
 	User                *User     `json:"user"`
 	CommentText         string    `json:"comment_text"`
-	DatePosted          time.Time `json:"date_posted"`
+	CreatedAt           time.Time `json:"created_at"`
 	Votes               *Votes    `json:"votes"`
 }
 
 type CommentVote struct {
-	CommentID int `json:"commentID"`
-	VoteValue int `json:"voteValue"`
-	UserID    int `json:"userID"`
+	CommentID int `json:"comment_id"`
+	VoteValue int `json:"vote_value"`
+	UserID    int `json:"user_id"`
 }
 
 type Post struct {
-	PostID     int       `json:"postID"`
+	PostID     int       `json:"post_id"`
 	User       *User     `json:"user"`
 	Title      string    `json:"title"`
-	SubTitle   *string   `json:"subTitle"`
+	Subtitle   *string   `json:"subtitle"`
 	PostText   string    `json:"post_text"`
 	DatePosted time.Time `json:"date_posted"`
 	Votes      *Votes    `json:"votes"`
@@ -35,22 +35,22 @@ type Post struct {
 
 type PostInput struct {
 	Title    string  `json:"title"`
-	SubTitle *string `json:"subTitle"`
+	Subtitle *string `json:"subtitle"`
 	Text     string  `json:"text"`
 }
 
 type PostVote struct {
-	PostID    int `json:"postID"`
-	VoteValue int `json:"voteValue"`
-	UserID    int `json:"userID"`
+	PostID    int `json:"post_id"`
+	VoteValue int `json:"vote_value"`
+	UserID    int `json:"user_id"`
 }
 
 type User struct {
-	UserID     int       `json:"userID"`
-	Username   string    `json:"username"`
-	Email      string    `json:"email"`
-	Posts      []*Post   `json:"posts"`
-	DateJoined time.Time `json:"date_joined"`
+	UserID    int       `json:"user_id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Posts     []*Post   `json:"posts"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type UserInput struct {
