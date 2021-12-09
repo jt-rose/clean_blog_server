@@ -6,12 +6,19 @@ import (
 	"fmt"
 	"os"
 
+	"log"
+
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/joho/godotenv"
 )
 
 const defaultDatabasePort = "5432"
 
 func initDB() *pgxpool.Pool {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	databasePort := os.Getenv("DB_PORT")
 	if databasePort == "" {
 		databasePort = defaultDatabasePort
