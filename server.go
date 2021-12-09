@@ -15,8 +15,8 @@ import (
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 
 	// local imports
-	initDB "github.com/jt-rose/clean_blog_server/database/initDB"
-	initRedis "github.com/jt-rose/clean_blog_server/database/initRedis"
+	postgres "github.com/jt-rose/clean_blog_server/postgres"
+	redis "github.com/jt-rose/clean_blog_server/redis"
 )
 
 const defaultServerPort = "8080"
@@ -32,17 +32,17 @@ func main() {
 		serverPort = defaultServerPort
 	}
 
-	dbpool := initDB.InitDB()
-	defer dbpool.Close()
+	//dbpool := initDB.InitDB()
+	//defer dbpool.Close()
 
 	// remove later
-	err = dbpool.Ping(context.Background())
+	err = postgres.DBPool.Ping(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 
-	rdb := initRedis.InitRedis()
+	rdb := redis.RedisClient
 	// remove later
 	pong, err := rdb.Ping(context.Background()).Result()
 	if err != nil {

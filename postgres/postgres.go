@@ -11,7 +11,7 @@ import (
 
 const defaultDatabasePort = "5432"
 
-func InitDB() *pgxpool.Pool {
+func initDB() *pgxpool.Pool {
 	databasePort := os.Getenv("DB_PORT")
 	if databasePort == "" {
 		databasePort = defaultDatabasePort
@@ -27,3 +27,5 @@ func InitDB() *pgxpool.Pool {
 
 	return dbpool
 }
+
+var DBPool = initDB()
