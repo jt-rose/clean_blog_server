@@ -32,11 +32,11 @@ func main() {
 		serverPort = defaultServerPort
 	}
 
-	//dbpool := initDB.InitDB()
-	//defer dbpool.Close()
+	dbpool := postgres.DBPool
+	defer dbpool.Close()
 
 	// remove later
-	err = postgres.DBPool.Ping(context.Background())
+	err = dbpool.Ping(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
