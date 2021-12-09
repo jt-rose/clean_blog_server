@@ -2,19 +2,64 @@
 
 package model
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+import (
+	"time"
+)
+
+type Comment struct {
+	CommentID           int       `json:"commentID"`
+	ResponseToCommentID int       `json:"responseToCommentID"`
+	PostID              int       `json:"postID"`
+	UserID              int       `json:"userID"`
+	User                *User     `json:"user"`
+	CommentText         string    `json:"comment_text"`
+	DatePosted          time.Time `json:"date_posted"`
+	Votes               *Votes    `json:"votes"`
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
+type CommentVote struct {
+	CommentID int `json:"commentID"`
+	VoteValue int `json:"voteValue"`
+	UserID    int `json:"userID"`
+}
+
+type Post struct {
+	PostID     int       `json:"postID"`
+	User       *User     `json:"user"`
+	Title      string    `json:"title"`
+	SubTitle   *string   `json:"subTitle"`
+	PostText   string    `json:"post_text"`
+	DatePosted time.Time `json:"date_posted"`
+	Votes      *Votes    `json:"votes"`
+}
+
+type PostInput struct {
+	Title    string  `json:"title"`
+	SubTitle *string `json:"subTitle"`
+	Text     string  `json:"text"`
+}
+
+type PostVote struct {
+	PostID    int `json:"postID"`
+	VoteValue int `json:"voteValue"`
+	UserID    int `json:"userID"`
 }
 
 type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	UserID     int       `json:"userID"`
+	Username   string    `json:"username"`
+	Email      string    `json:"email"`
+	Posts      []*Post   `json:"posts"`
+	DateJoined time.Time `json:"date_joined"`
+}
+
+type UserInput struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type Votes struct {
+	Upvote   int `json:"upvote"`
+	Downvote int `json:"downvote"`
 }

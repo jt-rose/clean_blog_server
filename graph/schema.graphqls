@@ -1,11 +1,13 @@
 #### GRAPHQL SDL ####
+scalar Time
+
 type User {
   userID: Int! ## SQL generated PK
   username: String!
   email: String!
   ## password - not shared via graphql
   posts: [Post]
-  date_joined: Date!
+  date_joined: Time!
 }
 
 input UserInput {
@@ -34,7 +36,7 @@ type Post {
   title: String!
   subTitle: String ## optional
   post_text: String! ## will store a JSON-serialized version of the HTML markup
-  date_posted: Date!
+  date_posted: Time!
   votes: Votes! ## field resolver
 }
 
@@ -52,7 +54,7 @@ type Comment {
   userID: Int!
   user: User! ## field resolver
   comment_text: String!
-  date_posted: Date!
+  date_posted: Time!
   votes: Votes! ## field resolver
 }
 
@@ -83,7 +85,7 @@ type Mutation {
   # authentication:
   registerNewUser(userInput: UserInput!): User!
   login(username: String!, password: String!): User!
-  logout(): Boolean!
+  logout: Boolean!
   forgotPassword(username: String!): Boolean!
-  resetPassword(username: string!, newPassword: String!): User!
+  resetPassword(username: String!, newPassword: String!): User!
 }
