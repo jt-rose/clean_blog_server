@@ -1,0 +1,13 @@
+output   = "sql_models"
+wipe     = true
+no-tests = true
+
+[psql]
+  dbname = "clean_blog"
+  host   = "localhost"
+  port   = 5432
+  user   = "jeffreyrose"
+  pass   = ""
+  schema = "public"
+  blacklist = ["migrations", "other"]
+  sslmode = "disable"
