@@ -36,6 +36,18 @@ func ConvertUser(sql_user *sql_models.User) gql_models.User {
 	}
 }
 
-func ConvertCommentVote() {}
+func ConvertCommentVote(sql_comment_vote *sql_models.CommentVote) gql_models.CommentVote {
+	return gql_models.CommentVote{
+		CommentID: sql_comment_vote.CommentID,
+		VoteValue: sql_comment_vote.VoteValue,
+		UserID: sql_comment_vote.UserID,
+	}
+}
 
-func ConvertPostVote() {}
+func ConvertPostVote(sql_post_vote *sql_models.PostVote) gql_models.PostVote {
+	return gql_models.PostVote{
+		PostID: sql_post_vote.PostID,
+		VoteValue: sql_post_vote.VoteValue,
+		UserID: sql_post_vote.UserID,
+	}
+}
