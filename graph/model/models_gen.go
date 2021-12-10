@@ -24,13 +24,14 @@ type CommentVote struct {
 }
 
 type Post struct {
-	PostID     int       `json:"post_id"`
-	User       *User     `json:"user"`
-	Title      string    `json:"title"`
-	Subtitle   *string   `json:"subtitle"`
-	PostText   string    `json:"post_text"`
-	DatePosted time.Time `json:"date_posted"`
-	Votes      *Votes    `json:"votes"`
+	PostID    int       `json:"post_id"`
+	UserID    int       `json:"user_id"`
+	User      *User     `json:"user"`
+	Title     string    `json:"title"`
+	Subtitle  string    `json:"subtitle"`
+	PostText  string    `json:"post_text"`
+	CreatedAt time.Time `json:"created_at"`
+	Votes     *Votes    `json:"votes"`
 }
 
 type PostInput struct {

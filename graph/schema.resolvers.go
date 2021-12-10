@@ -5,11 +5,39 @@ package graph
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
+	"os"
 
+	_ "github.com/lib/pq"
+
+	//"time"
+
+	"github.com/joho/godotenv"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
+	convert "github.com/jt-rose/clean_blog_server/modelConverters"
+	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
 )
+
+// Open handle to database like normal
+func initDB() *sql.DB {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	return db
+}
+
+var DB = initDB()
 
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
@@ -80,7 +108,12 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+	p, err := sql_models.Posts().One(ctx, DB)
+	if err != nil {
+		panic(err)
+	}
+	m := convert.ConvertPost(p)
+	return &m, err
 }
 
 func (r *queryResolver) GetManyPosts(ctx context.Context, postIds []int) ([]*model.Post, error) {
