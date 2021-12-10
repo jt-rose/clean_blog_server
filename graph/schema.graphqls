@@ -32,11 +32,12 @@ type PostVote {
 
 type Post {
   post_id: Int!
+  user_id: Int!
   user: User # field resolver
   title: String!
-  subtitle: String ## optional
+  subtitle: String! ## optional
   post_text: String! ## will store a JSON-serialized version of the HTML markup
-  date_posted: Time!
+  created_at: Time!
   votes: Votes! ## field resolver
 }
 

@@ -12,7 +12,7 @@ CREATE TABLE posts (
   post_id SERIAL PRIMARY KEY,
   user_id INT REFERENCES Users(user_id) NOT NULL,
   title VARCHAR(255) NOT NULL,
-  subtitle VARCHAR(255), -- nullable
+  subtitle VARCHAR(255), NOT NULL,
   post_text TEXT NOT NULL, -- may change to JSONB based on react editor
   created_at TIMESTAMPTZ NOT NULL
 );
