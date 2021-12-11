@@ -126,18 +126,25 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
-	p, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, DB)
+	post, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, DB)
 
-  if p == nil {
+  if post == nil {
 	return nil, handleSQLErrors(ctx, err, "GetPost")
   }
 
-  m := convert.ConvertPost(p)
-  return &m, nil
+  formattedPost := convert.ConvertPost(post)
+  return &formattedPost, nil
 }
 
 func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := sql_models.Users(qm.Where("user_id = ?", userID)).One(ctx, DB)
+
+  if user == nil {
+	return nil, handleSQLErrors(ctx, err, "GetUser")
+  }
+
+  formattedUser := convert.ConvertUser(user)
+  return &formattedUser, nil
 }
 
 func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error) {
