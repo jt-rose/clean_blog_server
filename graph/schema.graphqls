@@ -50,7 +50,7 @@ type CommentVote {
 
 type Comment {
   comment_id: Int!
-  response_to_comment_id: Int! # used when one comment is in response to another comment, nesting it
+  response_to_comment_id: Int # used when one comment is in response to another comment, nesting it
   post_id: Int!
   user_id: Int!
   user: User! ## field resolver
