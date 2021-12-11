@@ -6,12 +6,14 @@ package models
 var TableNames = struct {
 	CommentVotes string
 	Comments     string
+	ErrorLog     string
 	PostVotes    string
 	Posts        string
 	Users        string
 }{
 	CommentVotes: "comment_votes",
 	Comments:     "comments",
+	ErrorLog:     "error_log",
 	PostVotes:    "post_votes",
 	Posts:        "posts",
 	Users:        "users",
