@@ -10,6 +10,17 @@ type User {
   created_at: Time!
 }
 
+input UserSearch {
+  username: String ## nullable for when searching all users
+  limit: Int!
+  offset: Int!
+}
+
+type PaginatedUsers {
+  users: [User]
+  more: Boolean!
+}
+
 input UserInput {
   username: String!
   email: String!
@@ -41,6 +52,23 @@ type Post {
   votes: Votes! ## field resolver
 }
 
+input PostInput {
+  title: String!
+  subtitle: String
+  text: String!
+}
+
+input PostSearch {
+  title: String ## nullable for when not specifying a title
+  limit: Int!
+  offset: Int!
+}
+
+type PaginatedPosts {
+  posts: [Post]
+  more: Boolean!
+}
+
 # tracked vote record for particular comments. Maps to SQL Many to Many relationship.
 type CommentVote {
   comment_id: Int!
@@ -59,19 +87,26 @@ type Comment {
   votes: Votes! ## field resolver
 }
 
+input CommentSearch {
+  post_id: Int! ## post_id rather than comment_id will be used
+  offset: Int!
+  limit: Int!
+}
+
+type PaginatedComments {
+  comments: [Comment]
+  more: Boolean!
+}
+
 type Query {
-  getPost(post_id: Int!): Post!
-  getManyPosts(post_ids: [Int!]!): [Post!]!
-  getComments(post_id: Int!): [Comment!]! # field resolver
+  getPost(post_id: Int!): Post ## nullable for when no post found
+  getUser(user_id: Int!): User ## nullable for when no user found
+  getManyPosts(postSearch: PostSearch!): PaginatedPosts!
+  getManyUsers(userSearch: UserSearch!): PaginatedUsers!
+  getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
   # authentication:
   me(user_id: Int!): Boolean! # authenticate signed in user
   isAuthor(user_id: Int!): Boolean! # authenticate author
-}
-
-input PostInput {
-  title: String!
-  subtitle: String
-  text: String!
 }
 
 type Mutation {
