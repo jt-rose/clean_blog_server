@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -18,7 +19,10 @@ import (
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
 	convert "github.com/jt-rose/clean_blog_server/modelConverters"
+
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 // Open handle to database like normal
@@ -38,6 +42,20 @@ import (
   }
   
   var DB = initDB()
+
+  func handleSQLErrors(ctx context.Context, err error, errOrigin string) error {
+		if err.Error() == "sql: no rows in result set" {
+			return errors.New("no posts found")
+		} else {
+			fmt.Println("Error: ", err)
+			errorLog := sql_models.ErrorLog{
+				ErrMessage: err.Error(),
+				ErrorOrigin: errOrigin,
+			}
+			errorLog.Insert(ctx, DB, boil.Infer())
+			return errors.New("data unavailable")
+		}
+  }
 
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
@@ -108,13 +126,14 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
-	p, err := sql_models.Posts().One(ctx, DB)
-  if err != nil {
-    panic(err)
+	p, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, DB)
+
+  if p == nil {
+	return nil, handleSQLErrors(ctx, err, "GetPost")
   }
+
   m := convert.ConvertPost(p)
-  return &m, err
-	//panic(fmt.Errorf("not implemented"))
+  return &m, nil
 }
 
 func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, error) {
