@@ -8,7 +8,7 @@ import (
 
 type Comment struct {
 	CommentID           int       `json:"comment_id"`
-	ResponseToCommentID int       `json:"response_to_comment_id"`
+	ResponseToCommentID *int      `json:"response_to_comment_id"`
 	PostID              int       `json:"post_id"`
 	UserID              int       `json:"user_id"`
 	User                *User     `json:"user"`
@@ -17,10 +17,31 @@ type Comment struct {
 	Votes               *Votes    `json:"votes"`
 }
 
+type CommentSearch struct {
+	PostID int `json:"post_id"`
+	Offset int `json:"offset"`
+	Limit  int `json:"limit"`
+}
+
 type CommentVote struct {
 	CommentID int `json:"comment_id"`
 	VoteValue int `json:"vote_value"`
 	UserID    int `json:"user_id"`
+}
+
+type PaginatedComments struct {
+	Comments []*Comment `json:"comments"`
+	More     bool       `json:"more"`
+}
+
+type PaginatedPosts struct {
+	Posts []*Post `json:"posts"`
+	More  bool    `json:"more"`
+}
+
+type PaginatedUsers struct {
+	Users []*User `json:"users"`
+	More  bool    `json:"more"`
 }
 
 type Post struct {
@@ -38,6 +59,12 @@ type PostInput struct {
 	Title    string  `json:"title"`
 	Subtitle *string `json:"subtitle"`
 	Text     string  `json:"text"`
+}
+
+type PostSearch struct {
+	Title  *string `json:"title"`
+	Limit  int     `json:"limit"`
+	Offset int     `json:"offset"`
 }
 
 type PostVote struct {
@@ -58,6 +85,12 @@ type UserInput struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type UserSearch struct {
+	Username *string `json:"username"`
+	Limit    int     `json:"limit"`
+	Offset   int     `json:"offset"`
 }
 
 type Votes struct {

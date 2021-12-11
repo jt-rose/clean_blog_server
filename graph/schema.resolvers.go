@@ -22,22 +22,22 @@ import (
 )
 
 // Open handle to database like normal
-func initDB() *sql.DB {
+  func initDB() *sql.DB {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+	  log.Fatal("Error loading .env file")
 	}
-
+  
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+	  os.Exit(1)
 	}
-
+  
 	return db
-}
-
-var DB = initDB()
+  }
+  
+  var DB = initDB()
 
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
@@ -109,18 +109,27 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
 	p, err := sql_models.Posts().One(ctx, DB)
-	if err != nil {
-		panic(err)
-	}
-	m := convert.ConvertPost(p)
-	return &m, err
+  if err != nil {
+    panic(err)
+  }
+  m := convert.ConvertPost(p)
+  return &m, err
+	//panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) GetManyPosts(ctx context.Context, postIds []int) ([]*model.Post, error) {
+func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) GetComments(ctx context.Context, postID int) ([]*model.Comment, error) {
+func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

@@ -80,6 +80,21 @@ type ComplexityRoot struct {
 		VoteOnPost      func(childComplexity int, postID int, voteValue int) int
 	}
 
+	PaginatedComments struct {
+		Comments func(childComplexity int) int
+		More     func(childComplexity int) int
+	}
+
+	PaginatedPosts struct {
+		More  func(childComplexity int) int
+		Posts func(childComplexity int) int
+	}
+
+	PaginatedUsers struct {
+		More  func(childComplexity int) int
+		Users func(childComplexity int) int
+	}
+
 	Post struct {
 		CreatedAt func(childComplexity int) int
 		PostID    func(childComplexity int) int
@@ -98,11 +113,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetComments  func(childComplexity int, postID int) int
-		GetManyPosts func(childComplexity int, postIds []int) int
-		GetPost      func(childComplexity int, postID int) int
-		IsAuthor     func(childComplexity int, userID int) int
-		Me           func(childComplexity int, userID int) int
+		GetManyComments func(childComplexity int, commentSearch model.CommentSearch) int
+		GetManyPosts    func(childComplexity int, postSearch model.PostSearch) int
+		GetManyUsers    func(childComplexity int, userSearch model.UserSearch) int
+		GetPost         func(childComplexity int, postID int) int
+		GetUser         func(childComplexity int, userID int) int
+		IsAuthor        func(childComplexity int, userID int) int
+		Me              func(childComplexity int, userID int) int
 	}
 
 	User struct {
@@ -146,8 +163,10 @@ type PostResolver interface {
 }
 type QueryResolver interface {
 	GetPost(ctx context.Context, postID int) (*model.Post, error)
-	GetManyPosts(ctx context.Context, postIds []int) ([]*model.Post, error)
-	GetComments(ctx context.Context, postID int) ([]*model.Comment, error)
+	GetUser(ctx context.Context, userID int) (*model.User, error)
+	GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error)
+	GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error)
+	GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error)
 	Me(ctx context.Context, userID int) (bool, error)
 	IsAuthor(ctx context.Context, userID int) (bool, error)
 }
@@ -398,6 +417,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.VoteOnPost(childComplexity, args["post_id"].(int), args["vote_value"].(int)), true
 
+	case "PaginatedComments.comments":
+		if e.complexity.PaginatedComments.Comments == nil {
+			break
+		}
+
+		return e.complexity.PaginatedComments.Comments(childComplexity), true
+
+	case "PaginatedComments.more":
+		if e.complexity.PaginatedComments.More == nil {
+			break
+		}
+
+		return e.complexity.PaginatedComments.More(childComplexity), true
+
+	case "PaginatedPosts.more":
+		if e.complexity.PaginatedPosts.More == nil {
+			break
+		}
+
+		return e.complexity.PaginatedPosts.More(childComplexity), true
+
+	case "PaginatedPosts.posts":
+		if e.complexity.PaginatedPosts.Posts == nil {
+			break
+		}
+
+		return e.complexity.PaginatedPosts.Posts(childComplexity), true
+
+	case "PaginatedUsers.more":
+		if e.complexity.PaginatedUsers.More == nil {
+			break
+		}
+
+		return e.complexity.PaginatedUsers.More(childComplexity), true
+
+	case "PaginatedUsers.users":
+		if e.complexity.PaginatedUsers.Users == nil {
+			break
+		}
+
+		return e.complexity.PaginatedUsers.Users(childComplexity), true
+
 	case "Post.created_at":
 		if e.complexity.Post.CreatedAt == nil {
 			break
@@ -475,17 +536,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PostVote.VoteValue(childComplexity), true
 
-	case "Query.getComments":
-		if e.complexity.Query.GetComments == nil {
+	case "Query.getManyComments":
+		if e.complexity.Query.GetManyComments == nil {
 			break
 		}
 
-		args, err := ec.field_Query_getComments_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_getManyComments_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.GetComments(childComplexity, args["post_id"].(int)), true
+		return e.complexity.Query.GetManyComments(childComplexity, args["commentSearch"].(model.CommentSearch)), true
 
 	case "Query.getManyPosts":
 		if e.complexity.Query.GetManyPosts == nil {
@@ -497,7 +558,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetManyPosts(childComplexity, args["post_ids"].([]int)), true
+		return e.complexity.Query.GetManyPosts(childComplexity, args["postSearch"].(model.PostSearch)), true
+
+	case "Query.getManyUsers":
+		if e.complexity.Query.GetManyUsers == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getManyUsers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetManyUsers(childComplexity, args["userSearch"].(model.UserSearch)), true
 
 	case "Query.getPost":
 		if e.complexity.Query.GetPost == nil {
@@ -510,6 +583,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetPost(childComplexity, args["post_id"].(int)), true
+
+	case "Query.getUser":
+		if e.complexity.Query.GetUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetUser(childComplexity, args["user_id"].(int)), true
 
 	case "Query.isAuthor":
 		if e.complexity.Query.IsAuthor == nil {
@@ -660,6 +745,17 @@ type User {
   created_at: Time!
 }
 
+input UserSearch {
+  username: String ## nullable for when searching all users
+  limit: Int!
+  offset: Int!
+}
+
+type PaginatedUsers {
+  users: [User]
+  more: Boolean!
+}
+
 input UserInput {
   username: String!
   email: String!
@@ -691,6 +787,23 @@ type Post {
   votes: Votes! ## field resolver
 }
 
+input PostInput {
+  title: String!
+  subtitle: String
+  text: String!
+}
+
+input PostSearch {
+  title: String ## nullable for when not specifying a title
+  limit: Int!
+  offset: Int!
+}
+
+type PaginatedPosts {
+  posts: [Post]
+  more: Boolean!
+}
+
 # tracked vote record for particular comments. Maps to SQL Many to Many relationship.
 type CommentVote {
   comment_id: Int!
@@ -700,7 +813,7 @@ type CommentVote {
 
 type Comment {
   comment_id: Int!
-  response_to_comment_id: Int! # used when one comment is in response to another comment, nesting it
+  response_to_comment_id: Int # used when one comment is in response to another comment, nesting it
   post_id: Int!
   user_id: Int!
   user: User! ## field resolver
@@ -709,19 +822,26 @@ type Comment {
   votes: Votes! ## field resolver
 }
 
+input CommentSearch {
+  post_id: Int! ## post_id rather than comment_id will be used
+  offset: Int!
+  limit: Int!
+}
+
+type PaginatedComments {
+  comments: [Comment]
+  more: Boolean!
+}
+
 type Query {
-  getPost(post_id: Int!): Post!
-  getManyPosts(post_ids: [Int!]!): [Post!]!
-  getComments(post_id: Int!): [Comment!]! # field resolver
+  getPost(post_id: Int!): Post ## nullable for when no post found
+  getUser(user_id: Int!): User ## nullable for when no user found
+  getManyPosts(postSearch: PostSearch!): PaginatedPosts!
+  getManyUsers(userSearch: UserSearch!): PaginatedUsers!
+  getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
   # authentication:
   me(user_id: Int!): Boolean! # authenticate signed in user
   isAuthor(user_id: Int!): Boolean! # authenticate author
-}
-
-input PostInput {
-  title: String!
-  subtitle: String
-  text: String!
 }
 
 type Mutation {
@@ -1019,33 +1139,48 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_getComments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_getManyComments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["post_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("post_id"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+	var arg0 model.CommentSearch
+	if tmp, ok := rawArgs["commentSearch"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commentSearch"))
+		arg0, err = ec.unmarshalNCommentSearch2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐCommentSearch(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["post_id"] = arg0
+	args["commentSearch"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Query_getManyPosts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []int
-	if tmp, ok := rawArgs["post_ids"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("post_ids"))
-		arg0, err = ec.unmarshalNInt2ᚕintᚄ(ctx, tmp)
+	var arg0 model.PostSearch
+	if tmp, ok := rawArgs["postSearch"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postSearch"))
+		arg0, err = ec.unmarshalNPostSearch2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPostSearch(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["post_ids"] = arg0
+	args["postSearch"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getManyUsers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UserSearch
+	if tmp, ok := rawArgs["userSearch"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userSearch"))
+		arg0, err = ec.unmarshalNUserSearch2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUserSearch(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userSearch"] = arg0
 	return args, nil
 }
 
@@ -1061,6 +1196,21 @@ func (ec *executionContext) field_Query_getPost_args(ctx context.Context, rawArg
 		}
 	}
 	args["post_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg0
 	return args, nil
 }
 
@@ -1192,14 +1342,11 @@ func (ec *executionContext) _Comment_response_to_comment_id(ctx context.Context,
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*int)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Comment_post_id(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
@@ -2056,6 +2203,207 @@ func (ec *executionContext) _Mutation_resetPassword(ctx context.Context, field g
 	return ec.marshalNUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _PaginatedComments_comments(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedComments) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginatedComments",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comments, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Comment)
+	fc.Result = res
+	return ec.marshalOComment2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginatedComments_more(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedComments) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginatedComments",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.More, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginatedPosts_posts(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedPosts) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginatedPosts",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Posts, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Post)
+	fc.Result = res
+	return ec.marshalOPost2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginatedPosts_more(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedPosts) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginatedPosts",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.More, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginatedUsers_users(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedUsers) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginatedUsers",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Users, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PaginatedUsers_more(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedUsers) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PaginatedUsers",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.More, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Post_post_id(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2470,14 +2818,50 @@ func (ec *executionContext) _Query_getPost(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Post)
 	fc.Result = res
-	return ec.marshalNPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
+	return ec.marshalOPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetUser(rctx, args["user_id"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_getManyPosts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2505,7 +2889,7 @@ func (ec *executionContext) _Query_getManyPosts(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetManyPosts(rctx, args["post_ids"].([]int))
+		return ec.resolvers.Query().GetManyPosts(rctx, args["postSearch"].(model.PostSearch))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2517,12 +2901,12 @@ func (ec *executionContext) _Query_getManyPosts(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Post)
+	res := resTmp.(*model.PaginatedPosts)
 	fc.Result = res
-	return ec.marshalNPost2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPostᚄ(ctx, field.Selections, res)
+	return ec.marshalNPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_getComments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_getManyUsers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2539,7 +2923,7 @@ func (ec *executionContext) _Query_getComments(ctx context.Context, field graphq
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_getComments_args(ctx, rawArgs)
+	args, err := ec.field_Query_getManyUsers_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -2547,7 +2931,7 @@ func (ec *executionContext) _Query_getComments(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetComments(rctx, args["post_id"].(int))
+		return ec.resolvers.Query().GetManyUsers(rctx, args["userSearch"].(model.UserSearch))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2559,9 +2943,51 @@ func (ec *executionContext) _Query_getComments(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Comment)
+	res := resTmp.(*model.PaginatedUsers)
 	fc.Result = res
-	return ec.marshalNComment2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐCommentᚄ(ctx, field.Selections, res)
+	return ec.marshalNPaginatedUsers2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedUsers(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getManyComments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getManyComments_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetManyComments(rctx, args["commentSearch"].(model.CommentSearch))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PaginatedComments)
+	fc.Result = res
+	return ec.marshalNPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4083,6 +4509,45 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCommentSearch(ctx context.Context, obj interface{}) (model.CommentSearch, error) {
+	var it model.CommentSearch
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "post_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("post_id"))
+			it.PostID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "offset":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			it.Offset, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "limit":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			it.Limit, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPostInput(ctx context.Context, obj interface{}) (model.PostInput, error) {
 	var it model.PostInput
 	asMap := map[string]interface{}{}
@@ -4113,6 +4578,45 @@ func (ec *executionContext) unmarshalInputPostInput(ctx context.Context, obj int
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
 			it.Text, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPostSearch(ctx context.Context, obj interface{}) (model.PostSearch, error) {
+	var it model.PostSearch
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "limit":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			it.Limit, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "offset":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			it.Offset, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4161,6 +4665,45 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUserSearch(ctx context.Context, obj interface{}) (model.UserSearch, error) {
+	var it model.UserSearch
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "limit":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			it.Limit, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "offset":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			it.Offset, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4187,9 +4730,6 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "response_to_comment_id":
 			out.Values[i] = ec._Comment_response_to_comment_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "post_id":
 			out.Values[i] = ec._Comment_post_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4377,6 +4917,93 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var paginatedCommentsImplementors = []string{"PaginatedComments"}
+
+func (ec *executionContext) _PaginatedComments(ctx context.Context, sel ast.SelectionSet, obj *model.PaginatedComments) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, paginatedCommentsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PaginatedComments")
+		case "comments":
+			out.Values[i] = ec._PaginatedComments_comments(ctx, field, obj)
+		case "more":
+			out.Values[i] = ec._PaginatedComments_more(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var paginatedPostsImplementors = []string{"PaginatedPosts"}
+
+func (ec *executionContext) _PaginatedPosts(ctx context.Context, sel ast.SelectionSet, obj *model.PaginatedPosts) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, paginatedPostsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PaginatedPosts")
+		case "posts":
+			out.Values[i] = ec._PaginatedPosts_posts(ctx, field, obj)
+		case "more":
+			out.Values[i] = ec._PaginatedPosts_more(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var paginatedUsersImplementors = []string{"PaginatedUsers"}
+
+func (ec *executionContext) _PaginatedUsers(ctx context.Context, sel ast.SelectionSet, obj *model.PaginatedUsers) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, paginatedUsersImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PaginatedUsers")
+		case "users":
+			out.Values[i] = ec._PaginatedUsers_users(ctx, field, obj)
+		case "more":
+			out.Values[i] = ec._PaginatedUsers_more(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var postImplementors = []string{"Post"}
 
 func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj *model.Post) graphql.Marshaler {
@@ -4515,9 +5142,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getPost(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
+				return res
+			})
+		case "getUser":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getUser(ctx, field)
 				return res
 			})
 		case "getManyPosts":
@@ -4534,7 +5169,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "getComments":
+		case "getManyUsers":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -4542,7 +5177,21 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getComments(ctx, field)
+				res = ec._Query_getManyUsers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "getManyComments":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getManyComments(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -4945,50 +5594,6 @@ func (ec *executionContext) marshalNComment2githubᚗcomᚋjtᚑroseᚋclean_blo
 	return ec._Comment(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNComment2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐCommentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Comment) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNComment2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v *model.Comment) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4997,6 +5602,11 @@ func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋjtᚑroseᚋclean_
 		return graphql.Null
 	}
 	return ec._Comment(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCommentSearch2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐCommentSearch(ctx context.Context, v interface{}) (model.CommentSearch, error) {
+	res, err := ec.unmarshalInputCommentSearch(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCommentVote2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐCommentVote(ctx context.Context, sel ast.SelectionSet, v model.CommentVote) graphql.Marshaler {
@@ -5028,88 +5638,50 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) unmarshalNInt2ᚕintᚄ(ctx context.Context, v interface{}) ([]int, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]int, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNInt2int(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
+func (ec *executionContext) marshalNPaginatedComments2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx context.Context, sel ast.SelectionSet, v model.PaginatedComments) graphql.Marshaler {
+	return ec._PaginatedComments(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNInt2ᚕintᚄ(ctx context.Context, sel ast.SelectionSet, v []int) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalNInt2int(ctx, sel, v[i])
-	}
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
+func (ec *executionContext) marshalNPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx context.Context, sel ast.SelectionSet, v *model.PaginatedComments) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
 		}
+		return graphql.Null
 	}
+	return ec._PaginatedComments(ctx, sel, v)
+}
 
-	return ret
+func (ec *executionContext) marshalNPaginatedPosts2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx context.Context, sel ast.SelectionSet, v model.PaginatedPosts) graphql.Marshaler {
+	return ec._PaginatedPosts(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx context.Context, sel ast.SelectionSet, v *model.PaginatedPosts) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PaginatedPosts(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPaginatedUsers2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedUsers(ctx context.Context, sel ast.SelectionSet, v model.PaginatedUsers) graphql.Marshaler {
+	return ec._PaginatedUsers(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPaginatedUsers2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedUsers(ctx context.Context, sel ast.SelectionSet, v *model.PaginatedUsers) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PaginatedUsers(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPost2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v model.Post) graphql.Marshaler {
 	return ec._Post(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNPost2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPostᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Post) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) marshalNPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v *model.Post) graphql.Marshaler {
@@ -5124,6 +5696,11 @@ func (ec *executionContext) marshalNPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blo
 
 func (ec *executionContext) unmarshalNPostInput2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPostInput(ctx context.Context, v interface{}) (model.PostInput, error) {
 	res, err := ec.unmarshalInputPostInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPostSearch2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPostSearch(ctx context.Context, v interface{}) (model.PostSearch, error) {
+	res, err := ec.unmarshalInputPostSearch(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -5187,6 +5764,11 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blo
 
 func (ec *executionContext) unmarshalNUserInput2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUserInput(ctx context.Context, v interface{}) (model.UserInput, error) {
 	res, err := ec.unmarshalInputUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUserSearch2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUserSearch(ctx context.Context, v interface{}) (model.UserSearch, error) {
+	res, err := ec.unmarshalInputUserSearch(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -5485,6 +6067,54 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
+func (ec *executionContext) marshalOComment2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v []*model.Comment) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOComment2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOComment2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v *model.Comment) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Comment(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
 	if v == nil {
 		return nil, nil
@@ -5570,6 +6200,47 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
