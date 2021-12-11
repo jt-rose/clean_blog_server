@@ -39,3 +39,10 @@ CREATE TABLE comment_votes (
   user_id INT REFERENCES Users(user_id) NOT NULL,
   PRIMARY KEY(comment_id, user_id)
 );
+
+CREATE TABLE error_log (
+    log_id SERIAL PRIMARY KEY,
+    err_message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    error_origin VARCHAR(255) NOT NULL
+);
