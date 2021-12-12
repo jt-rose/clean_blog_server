@@ -5,57 +5,18 @@ package graph
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
-	"log"
-	"os"
 
-	_ "github.com/lib/pq"
-
-	//"time"
-
-	"github.com/joho/godotenv"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
 	convert "github.com/jt-rose/clean_blog_server/modelConverters"
+	models "github.com/jt-rose/clean_blog_server/sql_models"
 
+	postgres "github.com/jt-rose/clean_blog_server/postgres"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
-
-// Open handle to database like normal
-  func initDB() *sql.DB {
-	err := godotenv.Load()
-	if err != nil {
-	  log.Fatal("Error loading .env file")
-	}
-  
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	if err != nil {
-	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-	  os.Exit(1)
-	}
-  
-	return db
-  }
-  
-  var DB = initDB()
-
-  func handleSQLErrors(ctx context.Context, err error, errOrigin string) error {
-		if err.Error() == "sql: no rows in result set" {
-			return errors.New("no posts found")
-		} else {
-			fmt.Println("Error: ", err)
-			errorLog := sql_models.ErrorLog{
-				ErrMessage: err.Error(),
-				ErrorOrigin: errOrigin,
-			}
-			errorLog.Insert(ctx, DB, boil.Infer())
-			return errors.New("data unavailable")
-		}
-  }
 
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
@@ -66,7 +27,20 @@ func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model
 }
 
 func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+	// add validation
+	newPost := models.Post{
+		UserID: 1,///////// add context/userID
+		Title: postInput.Title,
+		Subtitle: *postInput.Subtitle,
+		PostText: postInput.Text,
+	}
+	err := newPost.Insert(ctx, postgres.DB, boil.Infer())
+	if err != nil {
+		return nil, err
+	}
+
+	formattedPost := convert.ConvertPost(&newPost)
+	return &formattedPost, nil
 }
 
 func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error) {
@@ -126,10 +100,10 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
-	post, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, DB)
+	post, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, postgres.DB)
 
   if post == nil {
-	return nil, handleSQLErrors(ctx, err, "GetPost")
+	return nil, err
   }
 
   formattedPost := convert.ConvertPost(post)
@@ -137,10 +111,10 @@ func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, e
 }
 
 func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, error) {
-	user, err := sql_models.Users(qm.Where("user_id = ?", userID)).One(ctx, DB)
+	user, err := sql_models.Users(qm.Where("user_id = ?", userID)).One(ctx, postgres.DB)
 
   if user == nil {
-	return nil, handleSQLErrors(ctx, err, "GetUser")
+	return nil, err
   }
 
   formattedUser := convert.ConvertUser(user)
