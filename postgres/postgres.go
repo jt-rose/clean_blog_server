@@ -1,38 +1,27 @@
 package initDB
 
 import (
-	"context"
-	_ "database/sql"
+	"database/sql"
 	"fmt"
 	"os"
 
-	"log"
-
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/joho/godotenv"
+	ENV "github.com/jt-rose/clean_blog_server/constants"
+	_ "github.com/lib/pq"
 )
 
 const defaultDatabasePort = "5432"
 
-func initDB() *pgxpool.Pool {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	databasePort := os.Getenv("DB_PORT")
-	if databasePort == "" {
-		databasePort = defaultDatabasePort
-	}
+func initDB() *sql.DB {
 
-	dbpool, err := pgxpool.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	db, err := sql.Open("postgres", ENV.ENV_VARIABLES.DATABASE_URL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+	  os.Exit(1)
 	} else {
-		fmt.Println("Postgres database connected on port " + databasePort)
+		fmt.Println("Connected to Postgres database on port " + ENV.ENV_VARIABLES.DATABASE_PORT)
 	}
-
-	return dbpool
-}
-
-var DBPool = initDB()
+  
+	return db
+  }
+  
+  var DB = initDB()
