@@ -20,7 +20,11 @@ func initDB() *sql.DB {
 	} else {
 		fmt.Println("Connected to Postgres database on port " + ENV.ENV_VARIABLES.DATABASE_PORT)
 	}
-  
+	err = db.Ping()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+	  os.Exit(1)
+	}
 	return db
   }
   
