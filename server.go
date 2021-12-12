@@ -14,6 +14,7 @@ import (
 
 	// local imports
 	ENV "github.com/jt-rose/clean_blog_server/constants"
+	errorHandler "github.com/jt-rose/clean_blog_server/errorHandler"
 	postgres "github.com/jt-rose/clean_blog_server/postgres"
 	redis "github.com/jt-rose/clean_blog_server/redis"
 )
@@ -34,7 +35,7 @@ func main() {
 	}
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
-	//srv.SetErrorPresenter()
+	srv.SetErrorPresenter(errorHandler.HandleErrors)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
