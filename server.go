@@ -7,40 +7,21 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/joho/godotenv"
-
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/jt-rose/clean_blog_server/graph"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 
 	// local imports
+	ENV "github.com/jt-rose/clean_blog_server/constants"
 	postgres "github.com/jt-rose/clean_blog_server/postgres"
 	redis "github.com/jt-rose/clean_blog_server/redis"
 )
 
-const defaultServerPort = "8080"
-
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
-	serverPort := os.Getenv("SERVER_PORT")
-	if serverPort == "" {
-		serverPort = defaultServerPort
-	}
-
-	dbpool := postgres.DBPool
-	defer dbpool.Close()
-
-	// remove later
-	err = dbpool.Ping(context.Background())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
+	DB := postgres.DB
+	defer DB.Close()
 
 	rdb := redis.RedisClient
 	// remove later
@@ -53,10 +34,11 @@ func main() {
 	}
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	//srv.SetErrorPresenter()
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", serverPort)
-	log.Fatal(http.ListenAndServe(":"+serverPort, nil))
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", ENV.ENV_VARIABLES.SERVER_PORT)
+	log.Fatal(http.ListenAndServe(":"+ENV.ENV_VARIABLES.SERVER_PORT, nil))
 }
