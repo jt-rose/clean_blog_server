@@ -1,45 +1,64 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-
+	// graphQL handlers
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+
+	// gqlgen generated models
 	"github.com/jt-rose/clean_blog_server/graph"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 
+	// gin + redis session middleware
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-gonic/gin"
+
 	// local imports
+	auth "github.com/jt-rose/clean_blog_server/auth"
 	ENV "github.com/jt-rose/clean_blog_server/constants"
 	errorHandler "github.com/jt-rose/clean_blog_server/errorHandler"
 	postgres "github.com/jt-rose/clean_blog_server/postgres"
-	redis "github.com/jt-rose/clean_blog_server/redis"
 )
+
+// Defining the Graphql handler
+func graphqlHandler() gin.HandlerFunc {
+	// NewExecutableSchema and Config are in the generated.go file
+	// Resolver is in the resolver.go file
+	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
+
+// Defining the Playground handler
+func playgroundHandler() gin.HandlerFunc {
+	h := playground.Handler("GraphQL", "/query")
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
 
 func main() {
 
 	DB := postgres.DB
 	defer DB.Close()
 
-	rdb := redis.RedisClient
-	// remove later
-	pong, err := rdb.Ping(context.Background()).Result()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Redis connection failed: %v\n", err)
-		os.Exit(1)
-	} else {
-		fmt.Println(pong + " Redis connected")
-	}
+	// Setting up Gin
+	r := gin.Default()
+	store, _ := redis.NewStore(10, "tcp", "localhost:6379", "", []byte(ENV.ENV_VARIABLES.SESSION_KEY))
+	r.Use(sessions.Sessions("mysession", store))
+	r.Use(auth.GinContextToContextMiddleware())
+	r.Use(auth.Authenticate())
+	
+	r.GET("/inc", auth.TESTREDIS)
+	r.POST("/query", graphqlHandler())
+	r.GET("/", playgroundHandler())
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 	srv.SetErrorPresenter(errorHandler.HandleErrors)
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
-
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", ENV.ENV_VARIABLES.SERVER_PORT)
-	log.Fatal(http.ListenAndServe(":"+ENV.ENV_VARIABLES.SERVER_PORT, nil))
+	r.Run()
 }
