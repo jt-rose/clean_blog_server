@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	sessions "github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,7 @@ func Authenticate() gin.HandlerFunc {
 
 		// Retrieve our User struct and type-assert it
 		val := session.Get("user")
-		var user = &gql_models.User{}
+		/*var user = &gql_models.User{}
 		user, ok := val.(*gql_models.User)
 
 		// if the struct type does not match the expected User struct
@@ -45,10 +44,10 @@ func Authenticate() gin.HandlerFunc {
 			}
 			ginContext.Next()
 			return
-		}
+		}*/
 
 		// put User struct into context
-		ctx := context.WithValue(ginContext.Request.Context(), userCtxKey, user)
+		ctx := context.WithValue(ginContext.Request.Context(), userCtxKey, val)
 
 		// and call next with our new context
 		ginContext.Request = ginContext.Request.WithContext(ctx)

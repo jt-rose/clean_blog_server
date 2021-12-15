@@ -5,13 +5,21 @@ package graph
 
 import (
 	"context"
+	"encoding/gob"
+	"errors"
 	"fmt"
+
+	//"net/http"
 
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
+	"github.com/jt-rose/clean_blog_server/modelConverters"
 	convert "github.com/jt-rose/clean_blog_server/modelConverters"
 	models "github.com/jt-rose/clean_blog_server/sql_models"
 
+	sessions "github.com/gin-contrib/sessions"
+	auth "github.com/jt-rose/clean_blog_server/auth"
+	hash "github.com/jt-rose/clean_blog_server/hash"
 	postgres "github.com/jt-rose/clean_blog_server/postgres"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -72,7 +80,47 @@ func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, vot
 }
 
 func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	gc, err := auth.GinContextFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	
+	hashedPassword, err := hash.HashPassword(userInput.Password)
+
+	if err != nil {
+		// TODO: add error log
+		return nil, errors.New("Password error: please contact administrator")
+	}
+	
+	newUser := sql_models.User{
+		Username: userInput.Username,
+		Email: userInput.Email,
+		UserPassword: hashedPassword,
+	}
+
+	err = newUser.Insert(ctx, postgres.DB, boil.Infer())
+
+	if err != nil {
+		// TODO: add error log and handling
+		return nil, err
+	}
+	
+
+	// format user and remove password from struct
+	formattedUser := modelConverters.ConvertUser(&newUser)
+
+	// get session and add new user 
+	// add err handling
+	gob.Register(formattedUser)
+	session := sessions.Default(gc)
+	session.Set("user", formattedUser.UserID)
+	err = session.Save()
+	if err != nil {
+		return nil, err
+	}
+	// secure and add to redis session
+
+	return &formattedUser, err
 }
 
 func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.User, error) {
@@ -134,7 +182,22 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 }
 
 func (r *queryResolver) Me(ctx context.Context, userID int) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	gc, err := auth.GinContextFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	// format user and remove password from struct
+	//formattedUser := modelConverters.ConvertUser(&newUser)
+	session := sessions.Default(gc)
+	user := session.Get("user")
+	fmt.Println(user)
+	if user == "" || user == nil {
+		return false, nil
+	}
+ 	return true, nil
+	//session.Save(gc.Request, gc.Writer)
+	//panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) IsAuthor(ctx context.Context, userID int) (bool, error) {
