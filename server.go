@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	// local imports
+	helmet "github.com/danielkov/gin-helmet"
 	auth "github.com/jt-rose/clean_blog_server/auth"
 	ENV "github.com/jt-rose/clean_blog_server/constants"
 	errorHandler "github.com/jt-rose/clean_blog_server/errorHandler"
@@ -52,6 +53,7 @@ func main() {
 	r.Use(sessions.Sessions("mysession", store))
 	r.Use(auth.GinContextToContextMiddleware())
 	r.Use(auth.Authenticate())
+	r.Use(helmet.Default())
 	
 	r.GET("/inc", auth.TESTREDIS)
 	r.POST("/query", graphqlHandler())
