@@ -3,6 +3,7 @@ package main
 import (
 	// graphQL handlers
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/playground"
 
 	// gqlgen generated models
@@ -61,9 +62,13 @@ func main() {
 	r.POST("/query", graphqlHandler())
 	r.GET("/", playgroundHandler())
 
+	// initialize GraphQL server
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	// set up error and panic handling
 	srv.SetErrorPresenter(errorHandler.HandleErrors)
 	srv.SetRecoverFunc(errorHandler.HandlePanics)
+	// limit query complexity to depth of 20
+	srv.Use(extension.FixedComplexityLimit(20))
 
 	r.Run()
 }

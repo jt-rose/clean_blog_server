@@ -52,9 +52,22 @@ func HandleErrors(ctx context.Context, e error) *gqlerror.Error {
 // store error log and format message when recovering from a panic
 // to be used with the gql server.SetRecoverFunc function
 func HandlePanics(ctx context.Context, err interface{}) error {
-	errorMessage := errors.New("Internal server error!")
-	// notify bug tracker...
-	storeErrorLog(ctx, errorMessage)
+	var foundError error
+	genericError := errors.New("Internal server error!")
+	// run type assertion to confirm err is a map
+	errorStruct, ok := err.(error)
+	if ok {
+		foundError = errorStruct
+	} else {
+		foundError = genericError
+	}
 
-	return errorMessage
+	// notify bug tracker and print to console
+	// store detailed error message for error log
+	// but only show "Internal Server Error" for end users
+	fmt.Println(foundError.Error())
+	storeErrorLog(ctx, foundError)
+
+	return genericError
+
 }
