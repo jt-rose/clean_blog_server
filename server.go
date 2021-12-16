@@ -50,7 +50,9 @@ func main() {
 	// Setting up Gin
 	r := gin.Default()
 	store, _ := redis.NewStore(10, "tcp", "localhost:6379", "", []byte(ENV.ENV_VARIABLES.SESSION_KEY))
-	r.Use(sessions.Sessions("mysession", store))
+	
+	
+	r.Use(sessions.Sessions("session_id", store))
 	r.Use(auth.GinContextToContextMiddleware())
 	r.Use(auth.Authenticate())
 	r.Use(helmet.Default())
@@ -61,6 +63,7 @@ func main() {
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 	srv.SetErrorPresenter(errorHandler.HandleErrors)
+	srv.SetRecoverFunc(errorHandler.HandlePanics)
 
 	r.Run()
 }

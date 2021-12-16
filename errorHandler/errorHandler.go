@@ -14,18 +14,10 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-func HandleErrors(ctx context.Context, e error) *gqlerror.Error {
-	err := graphql.DefaultErrorPresenter(ctx, e)
-
-	//var myErr *MyError
-	if errors.Is(e, errors.New("sql: no rows in result set")) {
-		err.Message = "No matching data found in database"
-	} else {
-		// provide generic response to hide error details from the client
-		err.Message = "data unavailable"
-
-		// print out data on point of failure
-		pc := make([]uintptr, 15)
+// read the function environment and store a SQL record of the error
+func storeErrorLog(ctx context.Context, err error) error {
+	// print out data on point of failure
+	pc := make([]uintptr, 15)
 	n := runtime.Callers(2, pc)
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
@@ -33,12 +25,36 @@ func HandleErrors(ctx context.Context, e error) *gqlerror.Error {
 
 	// add data on point of failure to error log
 	errorLog := sql_models.ErrorLog{
-		ErrMessage: err.Error(),
+		ErrMessage:  err.Error(),
 		ErrorOrigin: frame.Function,
 	}
 	errorLog.Insert(ctx, postgres.DB, boil.Infer())
-	}
+	return err
+}
 
+// parse errors and hide select error messages from end user
+func HandleErrors(ctx context.Context, e error) *gqlerror.Error {
+	err := graphql.DefaultErrorPresenter(ctx, e)
+
+	//var myErr *MyError
+	if errors.Is(e, errors.New("sql: no rows in result set")) {
+		err.Message = "No matching data found in database"
+	} else {
+		storeErrorLog(ctx, err)
+		// provide generic response to hide error details from the client
+		err.Message = "data unavailable"
+
+	}
 	// return newly formatted error
 	return err
+}
+
+// store error log and format message when recovering from a panic
+// to be used with the gql server.SetRecoverFunc function
+func HandlePanics(ctx context.Context, err interface{}) error {
+	errorMessage := errors.New("Internal server error!")
+	// notify bug tracker...
+	storeErrorLog(ctx, errorMessage)
+
+	return errorMessage
 }
