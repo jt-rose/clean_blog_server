@@ -44,6 +44,7 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func main() {
+	// get Database and close on defer
 	DB := database.DB
 	defer DB.Close()
 
@@ -51,22 +52,26 @@ func main() {
 	r := gin.Default()
 	store, _ := redis.NewStore(10, "tcp", "localhost:6379", "", []byte(ENV.ENV_VARIABLES.SESSION_KEY))
 	
-	
+	// set up middleware
 	r.Use(sessions.Sessions("session_id", store))
 	r.Use(middleware.GinContextToContextMiddleware())
 	r.Use(middleware.Authenticate())
 	r.Use(helmet.Default())
 	
+	// set up routes
 	r.POST("/query", graphqlHandler())
 	r.GET("/", playgroundHandler())
 
 	// initialize GraphQL server
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	
 	// set up error and panic handling
 	srv.SetErrorPresenter(middleware.HandleErrors)
 	srv.SetRecoverFunc(middleware.HandlePanics)
+	
 	// limit query complexity to depth of 20
 	srv.Use(extension.FixedComplexityLimit(20))
 
+	// run on default available ports
 	r.Run()
 }
