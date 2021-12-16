@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"fmt"
-
 	"net/http"
 
 	sessions "github.com/gin-contrib/sessions"
@@ -35,8 +34,6 @@ func Authenticate() gin.HandlerFunc {
 		// invalidate the cookie, store err in error log,
 		// and move on without adding to context
 		if !ok {
-			fmt.Println("ok: ", ok)
-			fmt.Println("user: ", user_id)
 			session.Delete("user")
 			err := session.Save()
 			// TODO: add to error log

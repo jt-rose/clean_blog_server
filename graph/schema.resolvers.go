@@ -189,8 +189,6 @@ func (r *queryResolver) Me(ctx context.Context, userID int) (bool, error) {
 	//formattedUser := modelConverters.ConvertUser(&newUser)
 	session := sessions.Default(gc)
 	user := session.Get("user")
-	fmt.Println(user)
-	fmt.Println(user)
 	if user == "" || user == nil {
 		return false, nil
 	}
