@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
 
@@ -31,6 +30,10 @@ func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model
 }
 
 func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error) {
+	/*gc, err := middleware.GinContextFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}*/
 	// add validation
 	newPost := models.Post{
 		UserID: 1,///////// add context/userID
@@ -107,7 +110,6 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 
 	// get session and add new user 
 	// add err handling
-	gob.Register(formattedUser)
 	session := sessions.Default(gc)
 	session.Set("user", formattedUser.UserID)
 	err = session.Save()
@@ -187,6 +189,7 @@ func (r *queryResolver) Me(ctx context.Context, userID int) (bool, error) {
 	//formattedUser := modelConverters.ConvertUser(&newUser)
 	session := sessions.Default(gc)
 	user := session.Get("user")
+	fmt.Println(user)
 	fmt.Println(user)
 	if user == "" || user == nil {
 		return false, nil

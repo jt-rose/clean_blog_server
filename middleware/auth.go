@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"net/http"
+
 	sessions "github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jt-rose/clean_blog_server/graph/model"
@@ -28,13 +30,14 @@ func Authenticate() gin.HandlerFunc {
 
 		// Retrieve our User struct and type-assert it
 		val := session.Get("user")
-		/*var user = &gql_models.User{}
-		user, ok := val.(*gql_models.User)
+		user_id, ok := val.(int)
 
 		// if the struct type does not match the expected User struct
 		// invalidate the cookie, store err in error log,
 		// and move on without adding to context
 		if !ok {
+			fmt.Println("ok: ", ok)
+			fmt.Println("user: ", user_id)
 			session.Delete("user")
 			err := session.Save()
 			// TODO: add to error log
@@ -43,10 +46,10 @@ func Authenticate() gin.HandlerFunc {
 			}
 			ginContext.Next()
 			return
-		}*/
-
-		// pass user infos to context
-		ctx := context.WithValue(ginContext.Request.Context(), userCtxKey, val)
+		}
+		
+		// pass user info to context
+		ctx := context.WithValue(ginContext.Request.Context(), userCtxKey, user_id)
 
 		// and call next with our new context
 		ginContext.Request = ginContext.Request.WithContext(ctx)
