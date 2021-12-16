@@ -9,19 +9,17 @@ import (
 	"errors"
 	"fmt"
 
-	//"net/http"
-
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
 	models "github.com/jt-rose/clean_blog_server/sql_models"
-	"github.com/jt-rose/clean_blog_server/utils"
+	utils "github.com/jt-rose/clean_blog_server/utils"
 
 	sessions "github.com/gin-contrib/sessions"
 	database "github.com/jt-rose/clean_blog_server/database"
 	middleware "github.com/jt-rose/clean_blog_server/middleware"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	boil "github.com/volatiletech/sqlboiler/v4/boil"
+	qm "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
