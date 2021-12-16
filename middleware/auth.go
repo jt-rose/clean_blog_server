@@ -8,7 +8,6 @@ import (
 
 	sessions "github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/jt-rose/clean_blog_server/graph/model"
 )
 
 // A private key for context that only this package can access. This is important
@@ -58,8 +57,8 @@ func Authenticate() gin.HandlerFunc {
 }
 
 // ForContext finds the user from the context. REQUIRES Middleware to have run.
-func ForContext(ctx context.Context) *model.User {
-	raw, _ := ctx.Value(userCtxKey).(*model.User)
+func GetUserIDFromContext(ctx context.Context) int {
+	raw, _ := ctx.Value(userCtxKey).(int)
 	return raw
 }
 
