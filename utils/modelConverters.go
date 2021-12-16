@@ -1,4 +1,4 @@
-package modelConverters
+package utils
 
 import (
 	gql_models "github.com/jt-rose/clean_blog_server/graph/model"

@@ -13,14 +13,12 @@ import (
 
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
-	"github.com/jt-rose/clean_blog_server/modelConverters"
-	convert "github.com/jt-rose/clean_blog_server/modelConverters"
 	models "github.com/jt-rose/clean_blog_server/sql_models"
+	"github.com/jt-rose/clean_blog_server/utils"
 
 	sessions "github.com/gin-contrib/sessions"
-	auth "github.com/jt-rose/clean_blog_server/auth"
-	hash "github.com/jt-rose/clean_blog_server/hash"
-	postgres "github.com/jt-rose/clean_blog_server/postgres"
+	database "github.com/jt-rose/clean_blog_server/database"
+	middleware "github.com/jt-rose/clean_blog_server/middleware"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -42,12 +40,12 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 		Subtitle: *postInput.Subtitle,
 		PostText: postInput.Text,
 	}
-	err := newPost.Insert(ctx, postgres.DB, boil.Infer())
+	err := newPost.Insert(ctx, database.DB, boil.Infer())
 	if err != nil {
 		return nil, err
 	}
 
-	formattedPost := convert.ConvertPost(&newPost)
+	formattedPost := utils.ConvertPost(&newPost)
 	return &formattedPost, nil
 }
 
@@ -80,12 +78,12 @@ func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, vot
 }
 
 func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error) {
-	gc, err := auth.GinContextFromContext(ctx)
+	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	
-	hashedPassword, err := hash.HashPassword(userInput.Password)
+	hashedPassword, err := utils.HashPassword(userInput.Password)
 
 	if err != nil {
 		// TODO: add error log
@@ -98,7 +96,7 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 		UserPassword: hashedPassword,
 	}
 
-	err = newUser.Insert(ctx, postgres.DB, boil.Infer())
+	err = newUser.Insert(ctx, database.DB, boil.Infer())
 
 	if err != nil {
 		// TODO: add error log and handling
@@ -107,7 +105,7 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 	
 
 	// format user and remove password from struct
-	formattedUser := modelConverters.ConvertUser(&newUser)
+	formattedUser := utils.ConvertUser(&newUser)
 
 	// get session and add new user 
 	// add err handling
@@ -148,24 +146,24 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
-	post, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, postgres.DB)
+	post, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, database.DB)
 
   if post == nil {
 	return nil, err
   }
 
-  formattedPost := convert.ConvertPost(post)
+  formattedPost := utils.ConvertPost(post)
   return &formattedPost, nil
 }
 
 func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, error) {
-	user, err := sql_models.Users(qm.Where("user_id = ?", userID)).One(ctx, postgres.DB)
+	user, err := sql_models.Users(qm.Where("user_id = ?", userID)).One(ctx, database.DB)
 
   if user == nil {
 	return nil, err
   }
 
-  formattedUser := convert.ConvertUser(user)
+  formattedUser := utils.ConvertUser(user)
   return &formattedUser, nil
 }
 
@@ -182,7 +180,7 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 }
 
 func (r *queryResolver) Me(ctx context.Context, userID int) (bool, error) {
-	gc, err := auth.GinContextFromContext(ctx)
+	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return false, err
 	}

@@ -1,4 +1,4 @@
-package errorHandler
+package middleware
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
-	postgres "github.com/jt-rose/clean_blog_server/postgres"
+	database "github.com/jt-rose/clean_blog_server/database"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
@@ -28,7 +28,7 @@ func storeErrorLog(ctx context.Context, err error) error {
 		ErrMessage:  err.Error(),
 		ErrorOrigin: frame.Function,
 	}
-	errorLog.Insert(ctx, postgres.DB, boil.Infer())
+	errorLog.Insert(ctx, database.DB, boil.Infer())
 	return err
 }
 

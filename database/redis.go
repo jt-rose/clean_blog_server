@@ -1,4 +1,4 @@
-package initRedis
+package database
 
 import (
 	"context"

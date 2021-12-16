@@ -1,4 +1,4 @@
-package initDB
+package database
 
 import (
 	"database/sql"
