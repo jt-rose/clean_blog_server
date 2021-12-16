@@ -62,7 +62,6 @@ func main() {
 	r.Use(middleware.Authenticate())
 	r.Use(helmet.Default())
 	
-	r.GET("/inc", middleware.TESTREDIS)
 	r.POST("/query", graphqlHandler())
 	r.GET("/", playgroundHandler())
 
