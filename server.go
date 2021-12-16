@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/gob"
+
 	// graphQL handlers
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -9,6 +11,7 @@ import (
 	// gqlgen generated models
 	"github.com/jt-rose/clean_blog_server/graph"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
+	"github.com/jt-rose/clean_blog_server/graph/model"
 
 	// gin + redis session middleware
 	"github.com/gin-contrib/sessions"
@@ -43,6 +46,8 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func main() {
+	// register User model with gob for session encoding
+	gob.Register(model.User{})
 
 	DB := database.DB
 	defer DB.Close()
