@@ -305,7 +305,19 @@ func (r *queryResolver) IsAuthor(ctx context.Context, userID int) (bool, error) 
 }
 
 func (r *userResolver) Posts(ctx context.Context, obj *model.User) ([]*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+	// possibly add pagination later
+	posts, err := sql_models.Posts(qm.Where("user_id = ?", obj.UserID)).All(ctx, database.DB)
+	if err != nil {
+		return nil, err
+	}
+
+	// format posts for graphQL response
+	var formattedPosts []*model.Post
+	for _, value := range posts {
+		fmtPost := utils.ConvertPost(value)
+		formattedPosts = append(formattedPosts, &fmtPost)
+	}
+	return formattedPosts, nil
 }
 
 // Comment returns generated.CommentResolver implementation.
