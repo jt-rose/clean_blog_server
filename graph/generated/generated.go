@@ -119,7 +119,7 @@ type ComplexityRoot struct {
 		GetPost         func(childComplexity int, postID int) int
 		GetUser         func(childComplexity int, userID int) int
 		IsAuthor        func(childComplexity int, userID int) int
-		Me              func(childComplexity int, userID int) int
+		Me              func(childComplexity int) int
 	}
 
 	User struct {
@@ -167,7 +167,7 @@ type QueryResolver interface {
 	GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error)
 	GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error)
 	GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error)
-	Me(ctx context.Context, userID int) (bool, error)
+	Me(ctx context.Context) (*model.User, error)
 	IsAuthor(ctx context.Context, userID int) (bool, error)
 }
 type UserResolver interface {
@@ -613,12 +613,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_me_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Me(childComplexity, args["user_id"].(int)), true
+		return e.complexity.Query.Me(childComplexity), true
 
 	case "User.created_at":
 		if e.complexity.User.CreatedAt == nil {
@@ -840,7 +835,7 @@ type Query {
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
   # authentication:
-  me(user_id: Int!): Boolean! # authenticate signed in user
+  me: User # authenticate signed in user
   isAuthor(user_id: Int!): Boolean! # authenticate author
 }
 
@@ -1215,21 +1210,6 @@ func (ec *executionContext) field_Query_getUser_args(ctx context.Context, rawArg
 }
 
 func (ec *executionContext) field_Query_isAuthor_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["user_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["user_id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_me_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
@@ -3006,30 +2986,20 @@ func (ec *executionContext) _Query_me(ctx context.Context, field graphql.Collect
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_me_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Me(rctx, args["user_id"].(int))
+		return ec.resolvers.Query().Me(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_isAuthor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5206,9 +5176,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_me(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
 		case "isAuthor":
