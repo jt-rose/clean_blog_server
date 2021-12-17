@@ -12,7 +12,6 @@ import (
 	"github.com/jt-rose/clean_blog_server/graph/model"
 	utils "github.com/jt-rose/clean_blog_server/utils"
 
-	sessions "github.com/gin-contrib/sessions"
 	database "github.com/jt-rose/clean_blog_server/database"
 	middleware "github.com/jt-rose/clean_blog_server/middleware"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
@@ -61,7 +60,7 @@ func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, vot
 }
 
 func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error) {
-	gc, err := middleware.GinContextFromContext(ctx)
+	_, session, err := middleware.GetGinContextAndSessions(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -90,22 +89,19 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 	// format user and remove password from struct
 	formattedUser := utils.ConvertUser(&newUser)
 
-	// get session and add new user 
-	// add err handling
-	session := sessions.Default(gc)
+	// add new user to session
 	session.Set("user", formattedUser.UserID)
 	err = session.Save()
 	if err != nil {
 		return nil, err
 	}
-	// secure and add to redis session
 
 	return &formattedUser, err
 }
 
 func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.User, error) {
-	// get gin context
-	gc, err := middleware.GinContextFromContext(ctx)
+	// get session
+	_, session, err := middleware.GetGinContextAndSessions(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +118,6 @@ func (r *mutationResolver) Login(ctx context.Context, username string, password 
 	}
 
 	// access and save session
-	session := sessions.Default(gc)
 	session.Set("user", user.UserID)
 	err = session.Save()
 	if err != nil {
@@ -136,13 +131,12 @@ func (r *mutationResolver) Login(ctx context.Context, username string, password 
 
 func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 	// get gin context
-	gc, err := middleware.GinContextFromContext(ctx)
+	_, session, err := middleware.GetGinContextAndSessions(ctx)
 	if err != nil {
 		return false, err
 	}
 	
 	// access and remove user from session
-	session := sessions.Default(gc)
 	session.Delete("user")
 	err = session.Save()
 	if err != nil {
@@ -279,12 +273,11 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	gc, err := middleware.GinContextFromContext(ctx)
+	_, session, err := middleware.GetGinContextAndSessions(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	session := sessions.Default(gc)
 	user := session.Get("user")
 	if user == 0 || user == nil {
 		return nil, nil
