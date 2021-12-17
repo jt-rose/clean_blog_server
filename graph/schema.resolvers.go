@@ -233,7 +233,45 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 }
 
 func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error) {
-	panic(fmt.Errorf("not implemented"))
+	// cap the maximum possible limit and return with one extra
+	// to check for remaining users
+	var limitPlusOne int
+	trueLimit := 20
+	if userSearch.Limit > trueLimit {
+		limitPlusOne = trueLimit + 1
+	} else {
+		limitPlusOne = userSearch.Limit + 1
+	}
+	
+	// get users from DB with optional search by username
+	var users sql_models.UserSlice
+	if *userSearch.Username == "" {
+		retrievedUsers, err := sql_models.Users(qm.Limit(limitPlusOne), qm.Offset(userSearch.Offset)).All(ctx, database.DB)
+		if err != nil {
+			return nil, err
+		}
+		users = retrievedUsers
+	} else {
+		retrievedUsers, err := sql_models.Users(qm.Limit(limitPlusOne), qm.Offset(userSearch.Offset), qm.Where("username ILIKE %?%", userSearch.Username)).All(ctx, database.DB)
+		if err != nil {
+			return nil, err
+		}
+		users = retrievedUsers
+	}
+
+	// format users for graphQL response
+	var formattedUsers []*model.User
+	for _, value := range users {
+		fmtUser := utils.ConvertUser(value)
+		formattedUsers = append(formattedUsers, &fmtUser)
+	}
+	
+	paginatedResponse := model.PaginatedUsers{
+		Users: formattedUsers,
+		More: len(users) == limitPlusOne,
+	}
+
+	return &paginatedResponse, nil
 }
 
 func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error) {
