@@ -10,7 +10,6 @@ import (
 
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
-	models "github.com/jt-rose/clean_blog_server/sql_models"
 	utils "github.com/jt-rose/clean_blog_server/utils"
 
 	sessions "github.com/gin-contrib/sessions"
@@ -30,24 +29,7 @@ func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model
 }
 
 func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error) {
-	/*gc, err := middleware.GinContextFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}*/
-	// add validation
-	newPost := models.Post{
-		UserID: 1,///////// add context/userID
-		Title: postInput.Title,
-		Subtitle: *postInput.Subtitle,
-		PostText: postInput.Text,
-	}
-	err := newPost.Insert(ctx, database.DB, boil.Infer())
-	if err != nil {
-		return nil, err
-	}
-
-	formattedPost := utils.ConvertPost(&newPost)
-	return &formattedPost, nil
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error) {
@@ -179,22 +161,29 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Me(ctx context.Context, userID int) (bool, error) {
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	// format user and remove password from struct
-	//formattedUser := modelConverters.ConvertUser(&newUser)
+	
+	
+	
 	session := sessions.Default(gc)
 	user := session.Get("user")
-	if user == "" || user == nil {
-		return false, nil
+	if user == 0 || user == nil {
+		return nil, nil
 	}
- 	return true, nil
-	//session.Save(gc.Request, gc.Writer)
-	//panic(fmt.Errorf("not implemented"))
+
+	u, err := sql_models.Users(qm.Where("user_id = ?", user)).One(ctx, database.DB)
+	if err != nil {
+		//error log
+		return nil, err
+	}
+	// format user and remove password from struct
+	formattedUser := utils.ConvertUser(u)
+ 	return &formattedUser, nil
 }
 
 func (r *queryResolver) IsAuthor(ctx context.Context, userID int) (bool, error) {
