@@ -104,11 +104,52 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 }
 
 func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	// get gin context
+	gc, err := middleware.GinContextFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// this function will accept either the username or user email
+	user, err := sql_models.Users(qm.Where("(username = ?) or (email = ?)", username, username)).One(ctx, database.DB)
+	if err != nil {
+		return nil, err
+	}
+
+	// compare password with hashed password
+	correctPassword := utils.CheckPasswordHash(password, user.UserPassword)
+	if !correctPassword {
+		return nil, errors.New("Incorrect username / password combination!")
+	}
+
+	// access and save session
+	session := sessions.Default(gc)
+	session.Set("user", user.UserID)
+	err = session.Save()
+	if err != nil {
+		return nil, err
+	}
+
+	// format user object and return it
+	formattedUser := utils.ConvertUser(user)
+	return &formattedUser, nil
 }
 
 func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	// get gin context
+	gc, err := middleware.GinContextFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	
+	// access and remove user from session
+	session := sessions.Default(gc)
+	session.Delete("user")
+	err = session.Save()
+	if err != nil {
+		return false, err
+	}
+	
+	return true, nil
 }
 
 func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) (bool, error) {
@@ -167,9 +208,6 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 		return nil, err
 	}
 
-	
-	
-	
 	session := sessions.Default(gc)
 	user := session.Get("user")
 	if user == 0 || user == nil {
