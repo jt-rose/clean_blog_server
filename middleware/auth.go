@@ -2,8 +2,11 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+
+	constants "github.com/jt-rose/clean_blog_server/constants"
 
 	sessions "github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -26,7 +29,7 @@ func Authenticate() gin.HandlerFunc {
 		// a session will always be returned
 		session := sessions.Default(ginContext)
 
-		// Retrieve our User struct and type-assert it
+		// Retrieve our User id and type-assert it
 		val := session.Get("user")
 		user_id, ok := val.(int)
 
@@ -96,4 +99,20 @@ return nil, nil, err
 
 	return gc,
 		session, nil
+}
+
+func GetUserIDFromSessions(ctx context.Context) (int, error) {
+	_, session, err := GetGinContextAndSessions(ctx)
+	if err != nil {
+		return 0, err
+	}
+	// Retrieve our User id and type-assert it
+	// return error if no userID int found
+	val := session.Get("user")
+	userID, ok := val.(int)
+	if !ok {
+		return 0, errors.New(constants.UNAUTHENTICATED_ERROR_MESSAGE)
+	} else {
+		return userID, nil
+	}
 }
