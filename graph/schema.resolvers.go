@@ -191,7 +191,45 @@ func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, e
 }
 
 func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error) {
-	panic(fmt.Errorf("not implemented"))
+	// cap the maximum possible limit and return with one extra
+	// to check for remaining posts
+	var limitPlusOne int
+	trueLimit := 20
+	if postSearch.Limit > trueLimit {
+		limitPlusOne = trueLimit + 1
+	} else {
+		limitPlusOne = postSearch.Limit + 1
+	}
+	
+	// get posts from DB with optional search by title
+	var posts sql_models.PostSlice
+	if *postSearch.Title == "" {
+		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
+		if err != nil {
+			return nil, err
+		}
+		posts = retrievedPosts
+	} else {
+		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE %?%", postSearch.Title)).All(ctx, database.DB)
+		if err != nil {
+			return nil, err
+		}
+		posts = retrievedPosts
+	}
+
+	// format posts for graphQL response
+	var formattedPosts []*model.Post
+	for _, value := range posts {
+		fmtPost := utils.ConvertPost(value)
+		formattedPosts = append(formattedPosts, &fmtPost)
+	}
+	
+	paginatedResponse := model.PaginatedPosts{
+		Posts: formattedPosts,
+		More: len(posts) == limitPlusOne,
+	}
+
+	return &paginatedResponse, nil
 }
 
 func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error) {
