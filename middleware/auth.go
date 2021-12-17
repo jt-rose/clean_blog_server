@@ -85,15 +85,15 @@ func GinContextFromContext(ctx context.Context) (*gin.Context, error) {
 
 // return gin context and sessions
 // handle error internally to reduce boilerplate
-func GetGinContextAndSessions(ctx context.Context) (*gin.Context, sessions.Session) {
+func GetGinContextAndSessions(ctx context.Context) (*gin.Context, sessions.Session, error) {
 	// get gin context
 	gc, err := GinContextFromContext(ctx)
 	if err != nil {
-return nil, nil
+return nil, nil, err
 	}
 	// get sessions
 	session := sessions.Default(gc)
 
 	return gc,
-		session
+		session, nil
 }
