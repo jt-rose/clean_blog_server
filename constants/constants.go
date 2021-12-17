@@ -36,3 +36,4 @@ func loadEnvVariables() ENV_Variables {
 
 var ENV_VARIABLES ENV_Variables = loadEnvVariables()
 var COOKIE_NAME="cid"
+var UNAUTHENTICATED_ERROR_MESSAGE = "Must be logged in!"

@@ -9,6 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
+	"github.com/jt-rose/clean_blog_server/constants"
 	database "github.com/jt-rose/clean_blog_server/database"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -39,6 +40,8 @@ func HandleErrors(ctx context.Context, e error) *gqlerror.Error {
 	//var myErr *MyError
 	if errors.Is(e, errors.New("sql: no rows in result set")) {
 		err.Message = "No matching data found in database"
+	} else if errors.Is(e, errors.New(constants.UNAUTHENTICATED_ERROR_MESSAGE)) {
+		err.Message = constants.UNAUTHENTICATED_ERROR_MESSAGE
 	} else {
 		storeErrorLog(ctx, err)
 		// provide generic response to hide error details from the client
