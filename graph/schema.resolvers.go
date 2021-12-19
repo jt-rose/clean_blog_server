@@ -15,9 +15,15 @@ import (
 	database "github.com/jt-rose/clean_blog_server/database"
 	middleware "github.com/jt-rose/clean_blog_server/middleware"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
+	"github.com/volatiletech/null/v8"
 	boil "github.com/volatiletech/sqlboiler/v4/boil"
 	qm "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
+
+// Generally, preemptive calls to the database to confirm relations exist
+// will be avoided, with SQl errors allowed to pass through as values
+// before being parsed by the ErrorHandler
+// this allows us to optimize our server by cutting down on DB queries
 
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
@@ -40,7 +46,31 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, er
 }
 
 func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseToCommentID *int, commentText string) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented"))
+	// confirm authenticated
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	
+	// attempt to add comment to database
+	newComment := sql_models.Comment{
+		UserID: userID,
+		PostID: postID,
+		ResponseToCommentID: null.Int{
+			Int: *responseToCommentID,
+			Valid: *responseToCommentID == 0,
+		},
+		CommentText: commentText,
+	}
+
+	err = newComment.Insert(ctx, database.DB, boil.Infer())
+
+	if err != nil {
+		return nil, err
+	}
+	// return graphQL version of comment object
+	gql_comment := utils.ConvertComment(&newComment)
+	return &gql_comment, nil
 }
 
 func (r *mutationResolver) EditComment(ctx context.Context, commentID int, newCommentText string) (*model.Comment, error) {
