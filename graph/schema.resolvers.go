@@ -163,7 +163,7 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bo
 	}
 
 	// attempt to delete the comment in the database
-	_, err = sql_models.Comments(qm.Where("comment_id = ?", commentID)).DeleteAll(ctx, database.DB)
+	_, err = sql_models.Comments(qm.Where("comment_id = ?", commentID)).UpdateAll(ctx, database.DB, sql_models.M{"deleted": true})
 	if err != nil {
 		return false, err
 	}
