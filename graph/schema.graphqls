@@ -34,10 +34,16 @@ type Votes {
   downvote: Int!
 }
 
+enum VoteValue {
+  upvote
+  downvote
+  neutral
+}
+
 # tracked vote record for particular posts. Maps to SQL Many to Many relationship.
 type PostVote {
   post_id: Int!
-  vote_value: Int! # -1 or 1
+  vote_value: VoteValue!
   user_id: Int!
 }
 
@@ -72,7 +78,7 @@ type PaginatedPosts {
 # tracked vote record for particular comments. Maps to SQL Many to Many relationship.
 type CommentVote {
   comment_id: Int!
-  vote_value: Int! # -1 or 1
+  vote_value: VoteValue!
   user_id: Int!
 }
 
@@ -120,8 +126,8 @@ type Mutation {
   ): Comment!
   editComment(comment_id: Int!, new_comment_text: String!): Comment!
   deleteComment(comment_id: Int!): Boolean!
-  voteOnPost(post_id: Int!, vote_value: Int!): PostVote!
-  voteOnComment(comment_id: Int!, vote_value: Int!): CommentVote!
+  voteOnPost(post_id: Int!, vote_value: VoteValue!): PostVote!
+  voteOnComment(comment_id: Int!, vote_value: VoteValue!): CommentVote!
   # authentication:
   registerNewUser(userInput: UserInput!): User!
   login(username: String!, password: String!): User!
