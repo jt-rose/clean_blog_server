@@ -51,13 +51,13 @@ func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseT
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// attempt to add comment to database
 	newComment := sql_models.Comment{
 		UserID: userID,
 		PostID: postID,
 		ResponseToCommentID: null.Int{
-			Int: *responseToCommentID,
+			Int:   *responseToCommentID,
 			Valid: *responseToCommentID == 0,
 		},
 		CommentText: commentText,
@@ -82,7 +82,7 @@ func (r *mutationResolver) EditComment(ctx context.Context, commentID int, newCo
 
 	// confirm user is author of comment
 	comment, err := sql_models.Comments(qm.Where("comment_id = ?", commentID)).One(ctx, database.DB)
-	if err != nil  {
+	if err != nil {
 		return nil, err
 	}
 
@@ -113,7 +113,7 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bo
 
 	// confirm user is author of comment
 	comment, err := sql_models.Comments(qm.Where("comment_id = ?", commentID)).One(ctx, database.DB)
-	if err != nil  {
+	if err != nil {
 		return false, err
 	}
 
@@ -134,7 +134,42 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bo
 }
 
 func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue int) (*model.PostVote, error) {
-	panic(fmt.Errorf("not implemented"))
+	// authenticate user
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if user has already voted
+	currentPostVote, err := sql_models.FindPostVote(ctx, database.DB, postID, userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// attempt to add new vote or update existing vote
+	if currentPostVote == nil {
+		currentPostVote = &sql_models.PostVote{
+			PostID:    postID,
+			UserID:    userID,
+			VoteValue: voteValue,
+		}
+		err = currentPostVote.Insert(ctx, database.DB, boil.Infer())
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+		currentPostVote.VoteValue = voteValue
+		_, err = currentPostVote.Update(ctx, database.DB, boil.Infer())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// return vote object
+	gql_postVote := utils.ConvertPostVote(currentPostVote)
+	return &gql_postVote, nil
 }
 
 func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, voteValue int) (*model.CommentVote, error) {
@@ -146,17 +181,17 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 	if err != nil {
 		return nil, err
 	}
-	
+
 	hashedPassword, err := utils.HashPassword(userInput.Password)
 
 	if err != nil {
 		// TODO: add error log
 		return nil, errors.New("Password error: please contact administrator")
 	}
-	
+
 	newUser := sql_models.User{
-		Username: userInput.Username,
-		Email: userInput.Email,
+		Username:     userInput.Username,
+		Email:        userInput.Email,
 		UserPassword: hashedPassword,
 	}
 
@@ -166,7 +201,6 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 		// TODO: add error log and handling
 		return nil, err
 	}
-	
 
 	// format user and remove password from struct
 	formattedUser := utils.ConvertUser(&newUser)
@@ -217,14 +251,14 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	// access and remove user from session
 	session.Delete("user")
 	err = session.Save()
 	if err != nil {
 		return false, err
 	}
-	
+
 	return true, nil
 }
 
@@ -247,23 +281,23 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
 	post, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, database.DB)
 
-  if post == nil {
-	return nil, err
-  }
+	if post == nil {
+		return nil, err
+	}
 
-  formattedPost := utils.ConvertPost(post)
-  return &formattedPost, nil
+	formattedPost := utils.ConvertPost(post)
+	return &formattedPost, nil
 }
 
 func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, error) {
 	user, err := sql_models.Users(qm.Where("user_id = ?", userID)).One(ctx, database.DB)
 
-  if user == nil {
-	return nil, err
-  }
+	if user == nil {
+		return nil, err
+	}
 
-  formattedUser := utils.ConvertUser(user)
-  return &formattedUser, nil
+	formattedUser := utils.ConvertUser(user)
+	return &formattedUser, nil
 }
 
 func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error) {
@@ -276,7 +310,7 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 	} else {
 		limitPlusOne = postSearch.Limit + 1
 	}
-	
+
 	// get posts from DB with optional search by title
 	var posts sql_models.PostSlice
 	if *postSearch.Title == "" {
@@ -299,10 +333,10 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 		fmtPost := utils.ConvertPost(value)
 		formattedPosts = append(formattedPosts, &fmtPost)
 	}
-	
+
 	paginatedResponse := model.PaginatedPosts{
 		Posts: formattedPosts,
-		More: len(posts) == limitPlusOne,
+		More:  len(posts) == limitPlusOne,
 	}
 
 	return &paginatedResponse, nil
@@ -318,7 +352,7 @@ func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserS
 	} else {
 		limitPlusOne = userSearch.Limit + 1
 	}
-	
+
 	// get users from DB with optional search by username
 	var users sql_models.UserSlice
 	if *userSearch.Username == "" {
@@ -341,10 +375,10 @@ func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserS
 		fmtUser := utils.ConvertUser(value)
 		formattedUsers = append(formattedUsers, &fmtUser)
 	}
-	
+
 	paginatedResponse := model.PaginatedUsers{
 		Users: formattedUsers,
-		More: len(users) == limitPlusOne,
+		More:  len(users) == limitPlusOne,
 	}
 
 	return &paginatedResponse, nil
@@ -372,7 +406,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	}
 	// format user and remove password from struct
 	formattedUser := utils.ConvertUser(u)
- 	return &formattedUser, nil
+	return &formattedUser, nil
 }
 
 func (r *queryResolver) IsAuthor(ctx context.Context, userID int) (bool, error) {
