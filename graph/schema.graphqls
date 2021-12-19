@@ -56,6 +56,8 @@ type Post {
   post_text: String! ## will store a JSON-serialized version of the HTML markup
   created_at: Time!
   votes: Votes! ## field resolver
+  deleted: Boolean! ## deleted posts will still be stored in the database
+  ## to allow for undoing a delete and restoring posts / comments / votes
 }
 
 input PostInput {
@@ -91,6 +93,8 @@ type Comment {
   comment_text: String!
   created_at: Time!
   votes: Votes! ## field resolver
+  deleted: Boolean! ## deleted comments will still be stored in the database
+  ## to allow for undoing a delete and restoring comments / votes
 }
 
 input CommentSearch {
@@ -119,6 +123,7 @@ type Mutation {
   addPost(postInput: PostInput!): Post!
   editPost(post_id: Int!, postInput: PostInput!): Post!
   deletePost(post_id: Int!): Boolean!
+  restorePost(post_id: Int!): Post!
   addComment(
     post_id: Int!
     response_to_comment_id: Int
@@ -126,6 +131,7 @@ type Mutation {
   ): Comment!
   editComment(comment_id: Int!, new_comment_text: String!): Comment!
   deleteComment(comment_id: Int!): Boolean!
+  restoreComment(comment_id: Int!): Comment!
   voteOnPost(post_id: Int!, vote_value: VoteValue!): PostVote!
   voteOnComment(comment_id: Int!, vote_value: VoteValue!): CommentVote!
   # authentication:
