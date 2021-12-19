@@ -195,7 +195,7 @@ func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue
 		currentPostVote = &sql_models.PostVote{
 			PostID:    postID,
 			UserID:    userID,
-			VoteValue: voteValue,
+			VoteValue: utils.ConvertGQLVoteValueEnums(voteValue),
 		}
 		err = currentPostVote.Insert(ctx, database.DB, boil.Infer())
 		if err != nil {
@@ -203,7 +203,7 @@ func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue
 		}
 
 	} else {
-		currentPostVote.VoteValue = voteValue
+		currentPostVote.VoteValue = utils.ConvertGQLVoteValueEnums(voteValue)
 		_, err = currentPostVote.Update(ctx, database.DB, boil.Infer())
 		if err != nil {
 			return nil, err
