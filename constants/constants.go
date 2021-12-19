@@ -11,7 +11,7 @@ type ENV_Variables struct {
 	DATABASE_URL  string
 	DATABASE_PORT string
 	SERVER_PORT   string
-	SESSION_KEY      string
+	SESSION_KEY   string
 }
 
 func loadEnvVariables() ENV_Variables {
@@ -37,3 +37,5 @@ func loadEnvVariables() ENV_Variables {
 var ENV_VARIABLES ENV_Variables = loadEnvVariables()
 var COOKIE_NAME="cid"
 var UNAUTHENTICATED_ERROR_MESSAGE = "Must be logged in!"
+// May refactor later to use a less "hard-coded" solution
+var AUTHOR_ID = 2
