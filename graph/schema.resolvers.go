@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jt-rose/clean_blog_server/constants"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
 	utils "github.com/jt-rose/clean_blog_server/utils"
@@ -34,7 +35,32 @@ func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model
 }
 
 func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+	// confirm user is the author of the blog
+	isAuthor, userID, err := middleware.ConfirmAuthor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isAuthor {
+		return nil, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
+	}
+
+	// attenpt to add new post
+	newPost := sql_models.Post{
+		UserID: userID,
+		Title: postInput.Title,
+		Subtitle: *postInput.Subtitle,
+		PostText: postInput.Text,
+	}
+
+	err = newPost.Insert(ctx, database.DB, boil.Infer())
+	if err != nil {
+		return nil, err
+	}
+
+	// return gql version of the post
+	gql_post := utils.ConvertPost(&newPost)
+	return &gql_post, nil
 }
 
 func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error) {
