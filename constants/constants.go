@@ -37,5 +37,6 @@ func loadEnvVariables() ENV_Variables {
 var ENV_VARIABLES ENV_Variables = loadEnvVariables()
 var COOKIE_NAME="cid"
 var UNAUTHENTICATED_ERROR_MESSAGE = "Must be logged in!"
+var ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE = "Only the author of the blog may add, edit, or delete posts"
 // May refactor later to use a less "hard-coded" solution
 var AUTHOR_ID = 2
