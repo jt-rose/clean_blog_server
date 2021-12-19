@@ -74,8 +74,34 @@ func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseT
 }
 
 func (r *mutationResolver) EditComment(ctx context.Context, commentID int, newCommentText string) (*model.Comment, error) {
-	
-	panic(fmt.Errorf("not implemented"))
+	// authenticate user
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// confirm user is author of comment
+	comment, err := sql_models.Comments(qm.Where("comment_id = ?", commentID)).One(ctx, database.DB)
+	if err != nil  {
+		return nil, err
+	}
+
+	// reject if not the author of the comment
+	if comment.UserID != userID {
+		err = errors.New("Only the author of a comment can edit or delete it")
+		return nil, err
+	}
+
+	// attempt to edit the comment in the database
+	_, err = sql_models.Comments(qm.Where("comment_id = ?", commentID)).UpdateAll(ctx, database.DB, sql_models.M{"comment_text": newCommentText})
+	if err != nil {
+		return nil, err
+	}
+
+	// return gql version of updated comment
+	gql_comment := utils.ConvertComment(comment)
+	gql_comment.CommentText = newCommentText
+	return &gql_comment, nil
 }
 
 func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bool, error) {
