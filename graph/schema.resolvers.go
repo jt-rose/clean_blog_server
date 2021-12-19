@@ -21,11 +21,6 @@ import (
 	qm "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-// Generally, preemptive calls to the database to confirm relations exist
-// will be avoided, with SQl errors allowed to pass through as values
-// before being parsed by the ErrorHandler
-// this allows us to optimize our server by cutting down on DB queries
-
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
@@ -47,8 +42,8 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 
 	// attenpt to add new post
 	newPost := sql_models.Post{
-		UserID: userID,
-		Title: postInput.Title,
+		UserID:   userID,
+		Title:    postInput.Title,
 		Subtitle: *postInput.Subtitle,
 		PostText: postInput.Text,
 	}
@@ -68,6 +63,24 @@ func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput m
 }
 
 func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, error) {
+	/*
+	// confirm user is the author of the blog
+	isAuthor, userID, err := middleware.ConfirmAuthor(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if !isAuthor {
+		return false, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
+	}
+
+	// attempt to delete the post and associated comments and votes
+	// NOTE: Need to delete comment votes when deleting comment
+	*/
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) RestorePost(ctx context.Context, postID int) (*model.Post, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -159,7 +172,11 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bo
 	return true, nil
 }
 
-func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue int) (*model.PostVote, error) {
+func (r *mutationResolver) RestoreComment(ctx context.Context, commentID int) (*model.Comment, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue model.VoteValue) (*model.PostVote, error) {
 	// authenticate user
 	userID, err := middleware.GetUserIDFromSessions(ctx)
 	if err != nil {
@@ -198,7 +215,7 @@ func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue
 	return &gql_postVote, nil
 }
 
-func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, voteValue int) (*model.CommentVote, error) {
+func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, voteValue model.VoteValue) (*model.CommentVote, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

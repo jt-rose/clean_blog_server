@@ -51,6 +51,7 @@ type ComplexityRoot struct {
 		CommentID           func(childComplexity int) int
 		CommentText         func(childComplexity int) int
 		CreatedAt           func(childComplexity int) int
+		Deleted             func(childComplexity int) int
 		PostID              func(childComplexity int) int
 		ResponseToCommentID func(childComplexity int) int
 		User                func(childComplexity int) int
@@ -76,8 +77,10 @@ type ComplexityRoot struct {
 		Logout          func(childComplexity int) int
 		RegisterNewUser func(childComplexity int, userInput model.UserInput) int
 		ResetPassword   func(childComplexity int, username string, newPassword string) int
-		VoteOnComment   func(childComplexity int, commentID int, voteValue int) int
-		VoteOnPost      func(childComplexity int, postID int, voteValue int) int
+		RestoreComment  func(childComplexity int, commentID int) int
+		RestorePost     func(childComplexity int, postID int) int
+		VoteOnComment   func(childComplexity int, commentID int, voteValue model.VoteValue) int
+		VoteOnPost      func(childComplexity int, postID int, voteValue model.VoteValue) int
 	}
 
 	PaginatedComments struct {
@@ -97,6 +100,7 @@ type ComplexityRoot struct {
 
 	Post struct {
 		CreatedAt func(childComplexity int) int
+		Deleted   func(childComplexity int) int
 		PostID    func(childComplexity int) int
 		PostText  func(childComplexity int) int
 		Subtitle  func(childComplexity int) int
@@ -145,11 +149,13 @@ type MutationResolver interface {
 	AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error)
 	EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error)
 	DeletePost(ctx context.Context, postID int) (bool, error)
+	RestorePost(ctx context.Context, postID int) (*model.Post, error)
 	AddComment(ctx context.Context, postID int, responseToCommentID *int, commentText string) (*model.Comment, error)
 	EditComment(ctx context.Context, commentID int, newCommentText string) (*model.Comment, error)
 	DeleteComment(ctx context.Context, commentID int) (bool, error)
-	VoteOnPost(ctx context.Context, postID int, voteValue int) (*model.PostVote, error)
-	VoteOnComment(ctx context.Context, commentID int, voteValue int) (*model.CommentVote, error)
+	RestoreComment(ctx context.Context, commentID int) (*model.Comment, error)
+	VoteOnPost(ctx context.Context, postID int, voteValue model.VoteValue) (*model.PostVote, error)
+	VoteOnComment(ctx context.Context, commentID int, voteValue model.VoteValue) (*model.CommentVote, error)
 	RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error)
 	Login(ctx context.Context, username string, password string) (*model.User, error)
 	Logout(ctx context.Context) (bool, error)
@@ -209,6 +215,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.CreatedAt(childComplexity), true
+
+	case "Comment.deleted":
+		if e.complexity.Comment.Deleted == nil {
+			break
+		}
+
+		return e.complexity.Comment.Deleted(childComplexity), true
 
 	case "Comment.post_id":
 		if e.complexity.Comment.PostID == nil {
@@ -393,6 +406,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ResetPassword(childComplexity, args["username"].(string), args["new_password"].(string)), true
 
+	case "Mutation.restoreComment":
+		if e.complexity.Mutation.RestoreComment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_restoreComment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RestoreComment(childComplexity, args["comment_id"].(int)), true
+
+	case "Mutation.restorePost":
+		if e.complexity.Mutation.RestorePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_restorePost_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RestorePost(childComplexity, args["post_id"].(int)), true
+
 	case "Mutation.voteOnComment":
 		if e.complexity.Mutation.VoteOnComment == nil {
 			break
@@ -403,7 +440,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.VoteOnComment(childComplexity, args["comment_id"].(int), args["vote_value"].(int)), true
+		return e.complexity.Mutation.VoteOnComment(childComplexity, args["comment_id"].(int), args["vote_value"].(model.VoteValue)), true
 
 	case "Mutation.voteOnPost":
 		if e.complexity.Mutation.VoteOnPost == nil {
@@ -415,7 +452,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.VoteOnPost(childComplexity, args["post_id"].(int), args["vote_value"].(int)), true
+		return e.complexity.Mutation.VoteOnPost(childComplexity, args["post_id"].(int), args["vote_value"].(model.VoteValue)), true
 
 	case "PaginatedComments.comments":
 		if e.complexity.PaginatedComments.Comments == nil {
@@ -465,6 +502,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Post.CreatedAt(childComplexity), true
+
+	case "Post.deleted":
+		if e.complexity.Post.Deleted == nil {
+			break
+		}
+
+		return e.complexity.Post.Deleted(childComplexity), true
 
 	case "Post.post_id":
 		if e.complexity.Post.PostID == nil {
@@ -764,10 +808,16 @@ type Votes {
   downvote: Int!
 }
 
+enum VoteValue {
+  upvote
+  downvote
+  neutral
+}
+
 # tracked vote record for particular posts. Maps to SQL Many to Many relationship.
 type PostVote {
   post_id: Int!
-  vote_value: Int! # -1 or 1
+  vote_value: VoteValue!
   user_id: Int!
 }
 
@@ -780,6 +830,8 @@ type Post {
   post_text: String! ## will store a JSON-serialized version of the HTML markup
   created_at: Time!
   votes: Votes! ## field resolver
+  deleted: Boolean! ## deleted posts will still be stored in the database
+  ## to allow for undoing a delete and restoring posts / comments / votes
 }
 
 input PostInput {
@@ -802,7 +854,7 @@ type PaginatedPosts {
 # tracked vote record for particular comments. Maps to SQL Many to Many relationship.
 type CommentVote {
   comment_id: Int!
-  vote_value: Int! # -1 or 1
+  vote_value: VoteValue!
   user_id: Int!
 }
 
@@ -815,6 +867,8 @@ type Comment {
   comment_text: String!
   created_at: Time!
   votes: Votes! ## field resolver
+  deleted: Boolean! ## deleted comments will still be stored in the database
+  ## to allow for undoing a delete and restoring comments / votes
 }
 
 input CommentSearch {
@@ -843,6 +897,7 @@ type Mutation {
   addPost(postInput: PostInput!): Post!
   editPost(post_id: Int!, postInput: PostInput!): Post!
   deletePost(post_id: Int!): Boolean!
+  restorePost(post_id: Int!): Post!
   addComment(
     post_id: Int!
     response_to_comment_id: Int
@@ -850,8 +905,9 @@ type Mutation {
   ): Comment!
   editComment(comment_id: Int!, new_comment_text: String!): Comment!
   deleteComment(comment_id: Int!): Boolean!
-  voteOnPost(post_id: Int!, vote_value: Int!): PostVote!
-  voteOnComment(comment_id: Int!, vote_value: Int!): CommentVote!
+  restoreComment(comment_id: Int!): Comment!
+  voteOnPost(post_id: Int!, vote_value: VoteValue!): PostVote!
+  voteOnComment(comment_id: Int!, vote_value: VoteValue!): CommentVote!
   # authentication:
   registerNewUser(userInput: UserInput!): User!
   login(username: String!, password: String!): User!
@@ -1071,6 +1127,36 @@ func (ec *executionContext) field_Mutation_resetPassword_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_restoreComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["comment_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment_id"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["comment_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_restorePost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["post_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("post_id"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["post_id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_voteOnComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1083,10 +1169,10 @@ func (ec *executionContext) field_Mutation_voteOnComment_args(ctx context.Contex
 		}
 	}
 	args["comment_id"] = arg0
-	var arg1 int
+	var arg1 model.VoteValue
 	if tmp, ok := rawArgs["vote_value"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vote_value"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg1, err = ec.unmarshalNVoteValue2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVoteValue(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1107,10 +1193,10 @@ func (ec *executionContext) field_Mutation_voteOnPost_args(ctx context.Context, 
 		}
 	}
 	args["post_id"] = arg0
-	var arg1 int
+	var arg1 model.VoteValue
 	if tmp, ok := rawArgs["vote_value"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vote_value"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg1, err = ec.unmarshalNVoteValue2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVoteValue(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1539,6 +1625,41 @@ func (ec *executionContext) _Comment_votes(ctx context.Context, field graphql.Co
 	return ec.marshalNVotes2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVotes(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Comment_deleted(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Comment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Deleted, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _CommentVote_comment_id(ctx context.Context, field graphql.CollectedField, obj *model.CommentVote) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1604,9 +1725,9 @@ func (ec *executionContext) _CommentVote_vote_value(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(model.VoteValue)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNVoteValue2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVoteValue(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CommentVote_user_id(ctx context.Context, field graphql.CollectedField, obj *model.CommentVote) (ret graphql.Marshaler) {
@@ -1770,6 +1891,48 @@ func (ec *executionContext) _Mutation_deletePost(ctx context.Context, field grap
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_restorePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_restorePost_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RestorePost(rctx, args["post_id"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Post)
+	fc.Result = res
+	return ec.marshalNPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_addComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1896,6 +2059,48 @@ func (ec *executionContext) _Mutation_deleteComment(ctx context.Context, field g
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_restoreComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_restoreComment_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RestoreComment(rctx, args["comment_id"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Comment)
+	fc.Result = res
+	return ec.marshalNComment2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_voteOnPost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1921,7 +2126,7 @@ func (ec *executionContext) _Mutation_voteOnPost(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().VoteOnPost(rctx, args["post_id"].(int), args["vote_value"].(int))
+		return ec.resolvers.Mutation().VoteOnPost(rctx, args["post_id"].(int), args["vote_value"].(model.VoteValue))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1963,7 +2168,7 @@ func (ec *executionContext) _Mutation_voteOnComment(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().VoteOnComment(rctx, args["comment_id"].(int), args["vote_value"].(int))
+		return ec.resolvers.Mutation().VoteOnComment(rctx, args["comment_id"].(int), args["vote_value"].(model.VoteValue))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2661,6 +2866,41 @@ func (ec *executionContext) _Post_votes(ctx context.Context, field graphql.Colle
 	return ec.marshalNVotes2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVotes(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Post_deleted(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Deleted, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PostVote_post_id(ctx context.Context, field graphql.CollectedField, obj *model.PostVote) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2726,9 +2966,9 @@ func (ec *executionContext) _PostVote_vote_value(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(model.VoteValue)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNVoteValue2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVoteValue(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PostVote_user_id(ctx context.Context, field graphql.CollectedField, obj *model.PostVote) (ret graphql.Marshaler) {
@@ -4748,6 +4988,11 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 				}
 				return res
 			})
+		case "deleted":
+			out.Values[i] = ec._Comment_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4826,6 +5071,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "restorePost":
+			out.Values[i] = ec._Mutation_restorePost(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "addComment":
 			out.Values[i] = ec._Mutation_addComment(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -4838,6 +5088,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteComment":
 			out.Values[i] = ec._Mutation_deleteComment(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "restoreComment":
+			out.Values[i] = ec._Mutation_restoreComment(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5040,6 +5295,11 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
+		case "deleted":
+			out.Values[i] = ec._Post_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5737,6 +5997,16 @@ func (ec *executionContext) unmarshalNUserInput2githubᚗcomᚋjtᚑroseᚋclean
 func (ec *executionContext) unmarshalNUserSearch2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUserSearch(ctx context.Context, v interface{}) (model.UserSearch, error) {
 	res, err := ec.unmarshalInputUserSearch(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNVoteValue2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVoteValue(ctx context.Context, v interface{}) (model.VoteValue, error) {
+	var res model.VoteValue
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNVoteValue2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVoteValue(ctx context.Context, sel ast.SelectionSet, v model.VoteValue) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNVotes2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐVotes(ctx context.Context, sel ast.SelectionSet, v model.Votes) graphql.Marshaler {

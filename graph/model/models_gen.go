@@ -3,6 +3,9 @@
 package model
 
 import (
+	"fmt"
+	"io"
+	"strconv"
 	"time"
 )
 
@@ -15,6 +18,7 @@ type Comment struct {
 	CommentText         string    `json:"comment_text"`
 	CreatedAt           time.Time `json:"created_at"`
 	Votes               *Votes    `json:"votes"`
+	Deleted             bool      `json:"deleted"`
 }
 
 type CommentSearch struct {
@@ -24,9 +28,9 @@ type CommentSearch struct {
 }
 
 type CommentVote struct {
-	CommentID int `json:"comment_id"`
-	VoteValue int `json:"vote_value"`
-	UserID    int `json:"user_id"`
+	CommentID int       `json:"comment_id"`
+	VoteValue VoteValue `json:"vote_value"`
+	UserID    int       `json:"user_id"`
 }
 
 type PaginatedComments struct {
@@ -53,6 +57,7 @@ type Post struct {
 	PostText  string    `json:"post_text"`
 	CreatedAt time.Time `json:"created_at"`
 	Votes     *Votes    `json:"votes"`
+	Deleted   bool      `json:"deleted"`
 }
 
 type PostInput struct {
@@ -68,9 +73,9 @@ type PostSearch struct {
 }
 
 type PostVote struct {
-	PostID    int `json:"post_id"`
-	VoteValue int `json:"vote_value"`
-	UserID    int `json:"user_id"`
+	PostID    int       `json:"post_id"`
+	VoteValue VoteValue `json:"vote_value"`
+	UserID    int       `json:"user_id"`
 }
 
 type User struct {
@@ -96,4 +101,47 @@ type UserSearch struct {
 type Votes struct {
 	Upvote   int `json:"upvote"`
 	Downvote int `json:"downvote"`
+}
+
+type VoteValue string
+
+const (
+	VoteValueUpvote   VoteValue = "upvote"
+	VoteValueDownvote VoteValue = "downvote"
+	VoteValueNeutral  VoteValue = "neutral"
+)
+
+var AllVoteValue = []VoteValue{
+	VoteValueUpvote,
+	VoteValueDownvote,
+	VoteValueNeutral,
+}
+
+func (e VoteValue) IsValid() bool {
+	switch e {
+	case VoteValueUpvote, VoteValueDownvote, VoteValueNeutral:
+		return true
+	}
+	return false
+}
+
+func (e VoteValue) String() string {
+	return string(e)
+}
+
+func (e *VoteValue) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = VoteValue(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid VoteValue", str)
+	}
+	return nil
+}
+
+func (e VoteValue) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
