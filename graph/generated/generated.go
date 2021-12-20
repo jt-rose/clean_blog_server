@@ -149,11 +149,11 @@ type MutationResolver interface {
 	AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error)
 	EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error)
 	DeletePost(ctx context.Context, postID int) (bool, error)
-	RestorePost(ctx context.Context, postID int) (*model.Post, error)
+	RestorePost(ctx context.Context, postID int) (bool, error)
 	AddComment(ctx context.Context, postID int, responseToCommentID *int, commentText string) (*model.Comment, error)
 	EditComment(ctx context.Context, commentID int, newCommentText string) (*model.Comment, error)
 	DeleteComment(ctx context.Context, commentID int) (bool, error)
-	RestoreComment(ctx context.Context, commentID int) (*model.Comment, error)
+	RestoreComment(ctx context.Context, commentID int) (bool, error)
 	VoteOnPost(ctx context.Context, postID int, voteValue model.VoteValue) (*model.PostVote, error)
 	VoteOnComment(ctx context.Context, commentID int, voteValue model.VoteValue) (*model.CommentVote, error)
 	RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error)
@@ -897,7 +897,7 @@ type Mutation {
   addPost(postInput: PostInput!): Post!
   editPost(post_id: Int!, postInput: PostInput!): Post!
   deletePost(post_id: Int!): Boolean!
-  restorePost(post_id: Int!): Post!
+  restorePost(post_id: Int!): Boolean!
   addComment(
     post_id: Int!
     response_to_comment_id: Int
@@ -905,7 +905,7 @@ type Mutation {
   ): Comment!
   editComment(comment_id: Int!, new_comment_text: String!): Comment!
   deleteComment(comment_id: Int!): Boolean!
-  restoreComment(comment_id: Int!): Comment!
+  restoreComment(comment_id: Int!): Boolean!
   voteOnPost(post_id: Int!, vote_value: VoteValue!): PostVote!
   voteOnComment(comment_id: Int!, vote_value: VoteValue!): CommentVote!
   # authentication:
@@ -1928,9 +1928,9 @@ func (ec *executionContext) _Mutation_restorePost(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Post)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_addComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2096,9 +2096,9 @@ func (ec *executionContext) _Mutation_restoreComment(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Comment)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNComment2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐComment(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_voteOnPost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {

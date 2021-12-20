@@ -123,7 +123,7 @@ type Mutation {
   addPost(postInput: PostInput!): Post!
   editPost(post_id: Int!, postInput: PostInput!): Post!
   deletePost(post_id: Int!): Boolean!
-  restorePost(post_id: Int!): Post!
+  restorePost(post_id: Int!): Boolean!
   addComment(
     post_id: Int!
     response_to_comment_id: Int
@@ -131,7 +131,7 @@ type Mutation {
   ): Comment!
   editComment(comment_id: Int!, new_comment_text: String!): Comment!
   deleteComment(comment_id: Int!): Boolean!
-  restoreComment(comment_id: Int!): Comment!
+  restoreComment(comment_id: Int!): Boolean!
   voteOnPost(post_id: Int!, vote_value: VoteValue!): PostVote!
   voteOnComment(comment_id: Int!, vote_value: VoteValue!): CommentVote!
   # authentication:
