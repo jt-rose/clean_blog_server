@@ -16,7 +16,7 @@ import (
 	database "github.com/jt-rose/clean_blog_server/database"
 	middleware "github.com/jt-rose/clean_blog_server/middleware"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
-	"github.com/volatiletech/null/v8"
+	null "github.com/volatiletech/null/v8"
 	boil "github.com/volatiletech/sqlboiler/v4/boil"
 	qm "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -83,8 +83,25 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, er
 	return true, nil
 }
 
-func (r *mutationResolver) RestorePost(ctx context.Context, postID int) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) RestorePost(ctx context.Context, postID int) (bool, error) {
+	// confirm user is the author of the blog
+	isAuthor, _, err := middleware.ConfirmAuthor(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if !isAuthor {
+		return false, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
+	}
+
+	// attempt to restore post by updating deleted property to false
+	_, err = sql_models.Posts(qm.Where("post_id = ?", postID)).UpdateAll(ctx, database.DB, sql_models.M{"deleted": false})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseToCommentID *int, commentText string) (*model.Comment, error) {
@@ -175,7 +192,7 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bo
 	return true, nil
 }
 
-func (r *mutationResolver) RestoreComment(ctx context.Context, commentID int) (*model.Comment, error) {
+func (r *mutationResolver) RestoreComment(ctx context.Context, commentID int) (bool, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
