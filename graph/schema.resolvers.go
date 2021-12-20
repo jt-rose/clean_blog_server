@@ -300,8 +300,7 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 	hashedPassword, err := utils.HashPassword(userInput.Password)
 
 	if err != nil {
-		// TODO: add error log
-		return nil, errors.New("Password error: please contact administrator")
+		return nil, err
 	}
 
 	newUser := sql_models.User{
