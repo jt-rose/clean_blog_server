@@ -543,13 +543,21 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 		limitPlusOne = commentSearch.Limit + 1
 	}
 
-	// get comments for DB
-	retrievedComments, err := sql_models.Comments(qm.Where("post_id = ?", commentSearch.PostID), qm.Limit(commentSearch.Limit), qm.Offset(commentSearch.Offset)).All(ctx, database.DB)
+	// get comments from DB
+	fmt.Println("comment id: ", commentSearch.CommentID)
+	searchForSubcomments := *commentSearch.CommentID != 0 || commentSearch.CommentID != nil
+	var whereClause qm.QueryMod
+	if searchForSubcomments {
+		whereClause = qm.Where("post_id = ? AND response_to_comment_id = ?", commentSearch.PostID, commentSearch.CommentID)
+	} else {
+		whereClause = qm.Where("post_id = ? AND response_to_comment_id = NULL", commentSearch.PostID)
+	}
+	retrievedComments, err := sql_models.Comments(whereClause, qm.Limit(commentSearch.Limit), qm.Offset(commentSearch.Offset)).All(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
 
-	// format posts for graphQL response
+	// format comments for graphQL response
 	var formattedComments []*model.Comment
 	for _, value := range retrievedComments {
 		fmtComment := utils.ConvertComment(value)
