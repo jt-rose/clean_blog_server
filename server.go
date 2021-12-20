@@ -8,6 +8,7 @@ import (
 
 	// gqlgen generated models
 
+	"github.com/jt-rose/clean_blog_server/dataloader"
 	"github.com/jt-rose/clean_blog_server/graph"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 
@@ -56,6 +57,7 @@ func main() {
 	r.Use(sessions.Sessions("session_id", store))
 	r.Use(middleware.GinContextToContextMiddleware())
 	r.Use(middleware.Authenticate())
+	r.Use(dataloader.UseDataLoaders())
 	r.Use(helmet.Default())
 	
 	// set up routes

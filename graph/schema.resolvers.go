@@ -14,6 +14,7 @@ import (
 	utils "github.com/jt-rose/clean_blog_server/utils"
 
 	database "github.com/jt-rose/clean_blog_server/database"
+	dataloader "github.com/jt-rose/clean_blog_server/dataloader"
 	middleware "github.com/jt-rose/clean_blog_server/middleware"
 	sql_models "github.com/jt-rose/clean_blog_server/sql_models"
 	null "github.com/volatiletech/null/v8"
@@ -22,7 +23,8 @@ import (
 )
 
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := dataloader.For(ctx).UserById.Load(obj.UserID)
+	return &user, err
 }
 
 func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model.Votes, error) {
@@ -423,7 +425,8 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, username string, n
 }
 
 func (r *postResolver) User(ctx context.Context, obj *model.Post) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := dataloader.For(ctx).UserById.Load(obj.UserID)
+	return &user, err
 }
 
 func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes, error) {
