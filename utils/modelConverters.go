@@ -42,7 +42,7 @@ func ConvertPost(sql_post *sql_models.Post) gql_models.Post {
 	}
 }
 
-func ConvertComment(sql_comment *sql_models.Comment) gql_models.Comment {	
+func ConvertComment(sql_comment *sql_models.Comment, hasSubComments bool) gql_models.Comment {	
 	if sql_comment.ResponseToCommentID.Valid == true {
 		return gql_models.Comment{
 			CommentID: sql_comment.CommentID,
@@ -51,6 +51,7 @@ func ConvertComment(sql_comment *sql_models.Comment) gql_models.Comment {
 			UserID: sql_comment.UserID,
 			CommentText: sql_comment.CommentText,
 			CreatedAt: sql_comment.CreatedAt,
+			HasSubComments: hasSubComments,
 		}
 	} else {
 		return gql_models.Comment{
