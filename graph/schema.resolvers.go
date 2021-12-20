@@ -347,7 +347,6 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 	err = newUser.Insert(ctx, database.DB, boil.Infer())
 
 	if err != nil {
-		// TODO: add error log and handling
 		return nil, err
 	}
 
@@ -534,7 +533,35 @@ func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserS
 }
 
 func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error) {
-	panic(fmt.Errorf("not implemented"))
+	// cap the maximum possible limit and return with one extra
+	// to check for remaining comments
+	var limitPlusOne int
+	trueLimit := 20
+	if commentSearch.Limit > trueLimit {
+		limitPlusOne = trueLimit + 1
+	} else {
+		limitPlusOne = commentSearch.Limit + 1
+	}
+
+	// get comments for DB
+		retrievedComments, err := sql_models.Comments(qm.Where("post_id = ?", commentSearch.PostID), qm.Limit(commentSearch.Limit), qm.Offset(commentSearch.Offset)).All(ctx, database.DB)
+		if err != nil {
+			return nil, err
+		}
+
+	// format posts for graphQL response
+	var formattedComments []*model.Comment
+	for _, value := range retrievedComments {
+		fmtComment := utils.ConvertComment(value)
+		formattedComments = append(formattedComments, &fmtComment)
+	}
+
+	paginatedResponse := model.PaginatedComments{
+		Comments: formattedComments,
+		More:  len(retrievedComments) == limitPlusOne,
+	}
+
+	return &paginatedResponse, nil
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
