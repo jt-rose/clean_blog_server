@@ -59,7 +59,34 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 }
 
 func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+	// confirm user is the author of the blog
+	isAuthor, _, err := middleware.ConfirmAuthor(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isAuthor {
+		return nil, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
+	}
+
+	// attempt to update the post in the database
+	currentPost, err := sql_models.FindPost(ctx, database.DB, postID)
+	if err != nil {
+		return nil, err
+	}
+	
+	currentPost.Title = postInput.Title
+	currentPost.Subtitle = *postInput.Subtitle
+	currentPost.PostText = postInput.Text
+
+	_, err = currentPost.Update(ctx, database.DB, boil.Infer())
+	if err != nil {
+		return nil, err
+	}
+	
+	// return gql version of sql post object
+	gql_post := utils.ConvertPost(currentPost)
+	return &gql_post, nil
 }
 
 func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, error) {
