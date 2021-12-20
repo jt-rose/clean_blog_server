@@ -147,7 +147,7 @@ func (r *mutationResolver) EditComment(ctx context.Context, commentID int, newCo
 
 	// reject if not the author of the comment
 	if comment.UserID != userID {
-		err = errors.New("Only the author of a comment can edit or delete it")
+		err = errors.New(constants.ONLY_COMMENT_AUTHOR_MAY_EDIT)
 		return nil, err
 	}
 
@@ -178,7 +178,36 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bo
 
 	// reject if not the author of the comment
 	if comment.UserID != userID {
-		err = errors.New("Only the author of a comment can edit or delete it")
+		err = errors.New(constants.ONLY_COMMENT_AUTHOR_MAY_EDIT)
+		return false, err
+	}
+
+	// attempt to delete the comment in the database
+	_, err = sql_models.Comments(qm.Where("comment_id = ?", commentID)).UpdateAll(ctx, database.DB, sql_models.M{"deleted": false})
+	if err != nil {
+		return false, err
+	}
+
+	// return boolean confirming successful restoration
+	return true, nil
+}
+
+func (r *mutationResolver) RestoreComment(ctx context.Context, commentID int) (bool, error) {
+	// authenticate user
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	// confirm user is author of comment
+	comment, err := sql_models.Comments(qm.Where("comment_id = ?", commentID)).One(ctx, database.DB)
+	if err != nil {
+		return false, err
+	}
+
+	// reject if not the author of the comment
+	if comment.UserID != userID {
+		err = errors.New(constants.ONLY_COMMENT_AUTHOR_MAY_EDIT)
 		return false, err
 	}
 
@@ -190,10 +219,6 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, commentID int) (bo
 
 	// return boolean confirming successful deletion
 	return true, nil
-}
-
-func (r *mutationResolver) RestoreComment(ctx context.Context, commentID int) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue model.VoteValue) (*model.PostVote, error) {
