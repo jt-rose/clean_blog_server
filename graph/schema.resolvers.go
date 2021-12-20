@@ -288,7 +288,42 @@ func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue
 }
 
 func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, voteValue model.VoteValue) (*model.CommentVote, error) {
-	panic(fmt.Errorf("not implemented"))
+	// authenticate user
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if user has already voted
+	currentCommentVote, err := sql_models.FindCommentVote(ctx, database.DB, commentID, userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// attempt to add new vote or update existing vote
+	if currentCommentVote == nil {
+		currentCommentVote = &sql_models.CommentVote{
+			CommentID:    commentID,
+			UserID:    userID,
+			VoteValue: utils.ConvertGQLVoteValueEnums(voteValue),
+		}
+		err = currentCommentVote.Insert(ctx, database.DB, boil.Infer())
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+		currentCommentVote.VoteValue = utils.ConvertGQLVoteValueEnums(voteValue)
+		_, err = currentCommentVote.Update(ctx, database.DB, boil.Infer())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// return vote object
+	gql_commentVote := utils.ConvertCommentVote(currentCommentVote)
+	return &gql_commentVote, nil
 }
 
 func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error) {
