@@ -155,7 +155,7 @@ func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseT
 		return nil, err
 	}
 	// return graphQL version of comment object
-	gql_comment := utils.ConvertComment(&newComment)
+	gql_comment := utils.ConvertComment(&newComment, false)
 	return &gql_comment, nil
 }
 
@@ -185,7 +185,11 @@ func (r *mutationResolver) EditComment(ctx context.Context, commentID int, newCo
 	}
 
 	// return gql version of updated comment
-	gql_comment := utils.ConvertComment(comment)
+	// there is the small
+	hasSubComments, _ := sql_models.Comments(qm.Where("response_to_comment_id = ?", commentID)).Exists(ctx, database.DB)
+
+	// if the above query has an error, we will simply use the zero value for hasSubComments
+	gql_comment := utils.ConvertComment(comment, hasSubComments)
 	gql_comment.CommentText = newCommentText
 	return &gql_comment, nil
 }
@@ -544,11 +548,11 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 	}
 
 	// get comments from DB
-	fmt.Println("comment id: ", commentSearch.CommentID)
-	searchForSubcomments := *commentSearch.CommentID != 0 || commentSearch.CommentID != nil
+	fmt.Println("comment id: ", commentSearch.ResponseToCommentID)
+	searchForSubcomments := *commentSearch.ResponseToCommentID != 0 || commentSearch.ResponseToCommentID != nil
 	var whereClause qm.QueryMod
 	if searchForSubcomments {
-		whereClause = qm.Where("post_id = ? AND response_to_comment_id = ?", commentSearch.PostID, commentSearch.CommentID)
+		whereClause = qm.Where("post_id = ? AND response_to_comment_id = ?", commentSearch.PostID, commentSearch.ResponseToCommentID)
 	} else {
 		whereClause = qm.Where("post_id = ? AND response_to_comment_id = NULL", commentSearch.PostID)
 	}
@@ -557,10 +561,29 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 		return nil, err
 	}
 
+	// find which comments have subcomments
+	var currentCommentIDList []int
+	for _, value := range retrievedComments {
+		currentCommentIDList = append(currentCommentIDList, value.CommentID)
+	}
+	// confirm []int works appropriately as qm.WhereIn arg
+	// the specs showed values being applied one by one, but slice... is not accepted
+	subComments, err := sql_models.Comments(qm.WhereIn("response_to_comment_id IN ?", currentCommentIDList)).All(ctx, database.DB)
+	if err != nil {
+		return nil, err
+	}
+
 	// format comments for graphQL response
 	var formattedComments []*model.Comment
-	for _, value := range retrievedComments {
-		fmtComment := utils.ConvertComment(value)
+	for _, comment := range retrievedComments {
+		// check if comment has subcomments
+		var hasSubComment bool
+		for _, subComment := range subComments {
+			if subComment.ResponseToCommentID.Int == comment.CommentID {
+				hasSubComment = true
+			}
+		}
+		fmtComment := utils.ConvertComment(comment, hasSubComment)
 		formattedComments = append(formattedComments, &fmtComment)
 	}
 
