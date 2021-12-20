@@ -98,7 +98,8 @@ type Comment {
 }
 
 input CommentSearch {
-  post_id: Int! ## post_id rather than comment_id will be used
+  post_id: Int!
+  comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
 }

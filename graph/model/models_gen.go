@@ -22,9 +22,10 @@ type Comment struct {
 }
 
 type CommentSearch struct {
-	PostID int `json:"post_id"`
-	Offset int `json:"offset"`
-	Limit  int `json:"limit"`
+	PostID    int  `json:"post_id"`
+	CommentID *int `json:"comment_id"`
+	Offset    int  `json:"offset"`
+	Limit     int  `json:"limit"`
 }
 
 type CommentVote struct {

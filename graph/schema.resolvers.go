@@ -74,7 +74,7 @@ func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput m
 	if err != nil {
 		return nil, err
 	}
-	
+
 	currentPost.Title = postInput.Title
 	currentPost.Subtitle = *postInput.Subtitle
 	currentPost.PostText = postInput.Text
@@ -83,7 +83,7 @@ func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput m
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// return gql version of sql post object
 	gql_post := utils.ConvertPost(currentPost)
 	return &gql_post, nil
@@ -304,7 +304,7 @@ func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, vot
 	// attempt to add new vote or update existing vote
 	if currentCommentVote == nil {
 		currentCommentVote = &sql_models.CommentVote{
-			CommentID:    commentID,
+			CommentID: commentID,
 			UserID:    userID,
 			VoteValue: utils.ConvertGQLVoteValueEnums(voteValue),
 		}
@@ -544,10 +544,10 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 	}
 
 	// get comments for DB
-		retrievedComments, err := sql_models.Comments(qm.Where("post_id = ?", commentSearch.PostID), qm.Limit(commentSearch.Limit), qm.Offset(commentSearch.Offset)).All(ctx, database.DB)
-		if err != nil {
-			return nil, err
-		}
+	retrievedComments, err := sql_models.Comments(qm.Where("post_id = ?", commentSearch.PostID), qm.Limit(commentSearch.Limit), qm.Offset(commentSearch.Offset)).All(ctx, database.DB)
+	if err != nil {
+		return nil, err
+	}
 
 	// format posts for graphQL response
 	var formattedComments []*model.Comment
@@ -558,7 +558,7 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 
 	paginatedResponse := model.PaginatedComments{
 		Comments: formattedComments,
-		More:  len(retrievedComments) == limitPlusOne,
+		More:     len(retrievedComments) == limitPlusOne,
 	}
 
 	return &paginatedResponse, nil

@@ -872,7 +872,8 @@ type Comment {
 }
 
 input CommentSearch {
-  post_id: Int! ## post_id rather than comment_id will be used
+  post_id: Int!
+  comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
 }
@@ -4733,6 +4734,14 @@ func (ec *executionContext) unmarshalInputCommentSearch(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("post_id"))
 			it.PostID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "comment_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment_id"))
+			it.CommentID, err = ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
