@@ -63,9 +63,8 @@ func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput m
 }
 
 func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, error) {
-	/*
 	// confirm user is the author of the blog
-	isAuthor, userID, err := middleware.ConfirmAuthor(ctx)
+	isAuthor, _, err := middleware.ConfirmAuthor(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -74,10 +73,14 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, er
 		return false, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
 	}
 
-	// attempt to delete the post and associated comments and votes
-	// NOTE: Need to delete comment votes when deleting comment
-	*/
-	panic(fmt.Errorf("not implemented"))
+	// attempt to update the deleted property to true
+	_, err = sql_models.Posts(qm.Where("post_id = ?", postID)).UpdateAll(ctx, database.DB, sql_models.M{"deleted": true})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *mutationResolver) RestorePost(ctx context.Context, postID int) (*model.Post, error) {
