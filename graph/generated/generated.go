@@ -52,6 +52,7 @@ type ComplexityRoot struct {
 		CommentText         func(childComplexity int) int
 		CreatedAt           func(childComplexity int) int
 		Deleted             func(childComplexity int) int
+		HasSubComments      func(childComplexity int) int
 		PostID              func(childComplexity int) int
 		ResponseToCommentID func(childComplexity int) int
 		User                func(childComplexity int) int
@@ -222,6 +223,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.Deleted(childComplexity), true
+
+	case "Comment.hasSubComments":
+		if e.complexity.Comment.HasSubComments == nil {
+			break
+		}
+
+		return e.complexity.Comment.HasSubComments(childComplexity), true
 
 	case "Comment.post_id":
 		if e.complexity.Comment.PostID == nil {
@@ -869,11 +877,13 @@ type Comment {
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted comments will still be stored in the database
   ## to allow for undoing a delete and restoring comments / votes
+  hasSubComments: Boolean! ## check if subcomments available, which can then
+  ## be retrieved via the getManyComments resolver
 }
 
 input CommentSearch {
   post_id: Int!
-  comment_id: Int ## nullable comment_id will be used for retrieving subcomments
+  response_to_comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
 }
@@ -1645,6 +1655,41 @@ func (ec *executionContext) _Comment_deleted(ctx context.Context, field graphql.
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Deleted, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Comment_hasSubComments(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Comment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasSubComments, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4737,11 +4782,11 @@ func (ec *executionContext) unmarshalInputCommentSearch(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
-		case "comment_id":
+		case "response_to_comment_id":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment_id"))
-			it.CommentID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("response_to_comment_id"))
+			it.ResponseToCommentID, err = ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4999,6 +5044,11 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			})
 		case "deleted":
 			out.Values[i] = ec._Comment_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "hasSubComments":
+			out.Values[i] = ec._Comment_hasSubComments(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}

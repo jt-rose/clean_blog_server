@@ -95,11 +95,13 @@ type Comment {
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted comments will still be stored in the database
   ## to allow for undoing a delete and restoring comments / votes
+  hasSubComments: Boolean! ## check if subcomments available, which can then
+  ## be retrieved via the getManyComments resolver
 }
 
 input CommentSearch {
   post_id: Int!
-  comment_id: Int ## nullable comment_id will be used for retrieving subcomments
+  response_to_comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
 }

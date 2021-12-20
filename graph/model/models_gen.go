@@ -19,13 +19,14 @@ type Comment struct {
 	CreatedAt           time.Time `json:"created_at"`
 	Votes               *Votes    `json:"votes"`
 	Deleted             bool      `json:"deleted"`
+	HasSubComments      bool      `json:"hasSubComments"`
 }
 
 type CommentSearch struct {
-	PostID    int  `json:"post_id"`
-	CommentID *int `json:"comment_id"`
-	Offset    int  `json:"offset"`
-	Limit     int  `json:"limit"`
+	PostID              int  `json:"post_id"`
+	ResponseToCommentID *int `json:"response_to_comment_id"`
+	Offset              int  `json:"offset"`
+	Limit               int  `json:"limit"`
 }
 
 type CommentVote struct {
