@@ -562,7 +562,7 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 
 	// get comments from DB
 	fmt.Println("comment id: ", commentSearch.ResponseToCommentID)
-	searchForSubcomments := *commentSearch.ResponseToCommentID != 0 || commentSearch.ResponseToCommentID != nil
+	searchForSubcomments := commentSearch.ResponseToCommentID != nil
 	var whereClause qm.QueryMod
 	if searchForSubcomments {
 		whereClause = qm.Where("post_id = ? AND response_to_comment_id = ?", commentSearch.PostID, commentSearch.ResponseToCommentID)
@@ -630,7 +630,12 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 }
 
 func (r *queryResolver) IsAuthor(ctx context.Context, userID int) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return false, err
+	}
+	isAuthor := constants.AUTHOR_ID == userID
+	return isAuthor, nil
 }
 
 func (r *userResolver) Posts(ctx context.Context, obj *model.User) (*model.PaginatedPosts, error) {
