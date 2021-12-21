@@ -28,7 +28,8 @@ func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.
 }
 
 func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model.Votes, error) {
-	panic(fmt.Errorf("not implemented"))
+	votes, err := dataloader.For(ctx).VotesByCommentID.Load(obj.CommentID)
+	return &votes, err
 }
 
 func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error) {

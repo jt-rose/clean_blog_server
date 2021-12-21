@@ -18,6 +18,10 @@ const loadersKey = "dataloaders"
 
 type Loaders struct {
 	UserById UserLoader
+	CommentByUserID CommentLoader
+	CommentByPostID CommentLoader
+	VotesByPostID VotesLoader
+	VotesByCommentID VotesLoader
 }
 
 func LoadUsers(ctx context.Context) func(ids []int) ([]model.User, []error){
@@ -57,9 +61,51 @@ func LoadUsers(ctx context.Context) func(ids []int) ([]model.User, []error){
 			}
 			
 		}
-		
+
 		// return sorted users
 		return sortedUsers, nil
+}
+}
+
+func LoadVotesByCommentID(ctx context.Context) func(ids []int) ([]model.Votes, []error){
+	return func(ids []int) ([]model.Votes, []error) {
+		// convert ids to []string
+		var stringArgs []string
+		for _, id := range ids {
+			stringArgs = append(stringArgs, strconv.Itoa(id))
+		}
+
+		// format param of SQL query
+		queryParam := "{"+ strings.Join(stringArgs, ",") + "}"
+
+		// attempt to fetch users
+		commentVotes, err := sql_models.CommentVotes(qm.Where("comment_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
+		
+		// format error
+		formattedErrors := []error{err}
+		if err != nil {
+			return nil, formattedErrors
+		}
+		
+		// total upvote and downvote counts by comment_id
+		voteCounts := make([]model.Votes, len(ids))
+		for i, commentID := range ids {
+			votes := model.Votes{}
+			for _, singleVote := range commentVotes {
+				if singleVote.CommentID == commentID {
+					if singleVote.VoteValue == -1 {
+						votes.Downvote++
+					}
+					if singleVote.VoteValue == 1 {
+						votes.Upvote++
+					}
+				}
+			}
+			voteCounts[i] = votes
+		}
+
+		// return vote counts
+		return voteCounts, nil
 }
 }
 
@@ -72,6 +118,11 @@ func UseDataLoaders() gin.HandlerFunc {
 				maxBatch: 100,
 				wait:     1 * time.Millisecond,
 				fetch: LoadUsers(ginContext),
+			},
+			VotesByCommentID: VotesLoader{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch: LoadVotesByCommentID(ginContext),
 			},
 		})
 
