@@ -2,8 +2,6 @@ package dataloader
 
 import (
 	"context"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,14 +24,8 @@ type Loaders struct {
 
 func LoadUsers(ctx context.Context) func(ids []int) ([]model.User, []error){
 	return func(ids []int) ([]model.User, []error) {
-		// convert ids to []string
-		var stringArgs []string
-		for _, id := range ids {
-			stringArgs = append(stringArgs, strconv.Itoa(id))
-		}
-
-		// format param of SQL query
-		queryParam := "{"+ strings.Join(stringArgs, ",") + "}"
+		// format ids as SQL string param
+		queryParam := utils.FormatSliceForSQLParams(ids)
 
 		// attempt to fetch users
 		users, err := sql_models.Users(qm.Where("user_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
@@ -69,14 +61,8 @@ func LoadUsers(ctx context.Context) func(ids []int) ([]model.User, []error){
 
 func LoadVotesByCommentID(ctx context.Context) func(ids []int) ([]model.Votes, []error){
 	return func(ids []int) ([]model.Votes, []error) {
-		// convert ids to []string
-		var stringArgs []string
-		for _, id := range ids {
-			stringArgs = append(stringArgs, strconv.Itoa(id))
-		}
-
-		// format param of SQL query
-		queryParam := "{"+ strings.Join(stringArgs, ",") + "}"
+		// format ids as SQL string param
+		queryParam := utils.FormatSliceForSQLParams(ids)
 
 		// attempt to fetch users
 		commentVotes, err := sql_models.CommentVotes(qm.Where("comment_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
@@ -111,14 +97,8 @@ func LoadVotesByCommentID(ctx context.Context) func(ids []int) ([]model.Votes, [
 
 func LoadVotesByPostID(ctx context.Context) func(ids []int) ([]model.Votes, []error){
 	return func(ids []int) ([]model.Votes, []error) {
-		// convert ids to []string
-		var stringArgs []string
-		for _, id := range ids {
-			stringArgs = append(stringArgs, strconv.Itoa(id))
-		}
-
-		// format param of SQL query
-		queryParam := "{"+ strings.Join(stringArgs, ",") + "}"
+		// format ids as SQL string param
+		queryParam := utils.FormatSliceForSQLParams(ids)
 
 		// attempt to fetch users
 		postVotes, err := sql_models.PostVotes(qm.Where("post_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
