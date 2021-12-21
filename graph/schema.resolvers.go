@@ -628,8 +628,10 @@ func (r *userResolver) Posts(ctx context.Context, obj *model.User) (*model.Pagin
 	// this should only be called for one user
 	// and the dataloader pattern is currently not necessary
 
-	// possibly add pagination later
-	posts, err := sql_models.Posts(qm.Where("user_id = ?", obj.UserID)).All(ctx, database.DB)
+	// pagination will limit these to 20 posts
+	// for fetching additional posts, the GetManyPosts resolver can then be used
+	// with the limit and offset set accordingly
+	posts, err := sql_models.Posts(qm.Where("user_id = ?", obj.UserID), qm.Limit(21)).All(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -640,7 +642,21 @@ func (r *userResolver) Posts(ctx context.Context, obj *model.User) (*model.Pagin
 		fmtPost := utils.ConvertPost(value)
 		formattedPosts = append(formattedPosts, &fmtPost)
 	}
-	return formattedPosts, nil
+
+	// check if there are more posts and remove the final one
+	// if the full 21 posts were retrieved
+	hasMore := false
+	if len(formattedPosts) == 21 {
+		hasMore = true
+		formattedPosts = formattedPosts[:len(formattedPosts) - 1]
+	}
+
+	response := model.PaginatedPosts{
+		Posts: formattedPosts,
+		More: hasMore,
+	}
+
+	return &response, nil
 }
 
 // Comment returns generated.CommentResolver implementation.
