@@ -27,6 +27,10 @@ func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.
 	return &user, err
 }
 
+func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) (*model.PaginatedComments, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model.Votes, error) {
 	votes, err := dataloader.For(ctx).VotesByCommentID.Load(obj.CommentID)
 	return &votes, err
@@ -430,6 +434,10 @@ func (r *postResolver) User(ctx context.Context, obj *model.Post) (*model.User, 
 	return &user, err
 }
 
+func (r *postResolver) Comments(ctx context.Context, obj *model.Post) (*model.PaginatedComments, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes, error) {
 	votes, err := dataloader.For(ctx).VotesByPostID.Load(obj.PostID)
 	return &votes, err
@@ -477,7 +485,7 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 		}
 		posts = retrievedPosts
 	} else {
-		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%" + *postSearch.Title + "%")).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%"+*postSearch.Title+"%")).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
@@ -650,15 +658,19 @@ func (r *userResolver) Posts(ctx context.Context, obj *model.User) (*model.Pagin
 	hasMore := false
 	if len(formattedPosts) == 21 {
 		hasMore = true
-		formattedPosts = formattedPosts[:len(formattedPosts) - 1]
+		formattedPosts = formattedPosts[:len(formattedPosts)-1]
 	}
 
 	response := model.PaginatedPosts{
 		Posts: formattedPosts,
-		More: hasMore,
+		More:  hasMore,
 	}
 
 	return &response, nil
+}
+
+func (r *userResolver) Comments(ctx context.Context, obj *model.User) (*model.PaginatedComments, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Comment returns generated.CommentResolver implementation.

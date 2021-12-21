@@ -58,15 +58,21 @@ models:
     fields:
       posts:
         resolver: true
+      comments:
+        resolver: true
   Post:
     fields:
       user:
+        resolver: true
+      comments:
         resolver: true
       votes:
         resolver: true
   Comment:
     fields:
       user:
+        resolver: true
+      comments:
         resolver: true
       votes:
         resolver: true

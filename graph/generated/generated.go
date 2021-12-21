@@ -147,6 +147,7 @@ type ComplexityRoot struct {
 type CommentResolver interface {
 	User(ctx context.Context, obj *model.Comment) (*model.User, error)
 
+	Comments(ctx context.Context, obj *model.Comment) (*model.PaginatedComments, error)
 	Votes(ctx context.Context, obj *model.Comment) (*model.Votes, error)
 }
 type MutationResolver interface {
@@ -169,6 +170,7 @@ type MutationResolver interface {
 type PostResolver interface {
 	User(ctx context.Context, obj *model.Post) (*model.User, error)
 
+	Comments(ctx context.Context, obj *model.Post) (*model.PaginatedComments, error)
 	Votes(ctx context.Context, obj *model.Post) (*model.Votes, error)
 }
 type QueryResolver interface {
@@ -182,6 +184,7 @@ type QueryResolver interface {
 }
 type UserResolver interface {
 	Posts(ctx context.Context, obj *model.User) (*model.PaginatedPosts, error)
+	Comments(ctx context.Context, obj *model.User) (*model.PaginatedComments, error)
 }
 
 type executableSchema struct {
@@ -1639,14 +1642,14 @@ func (ec *executionContext) _Comment_comments(ctx context.Context, field graphql
 		Object:     "Comment",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Comments, nil
+		return ec.resolvers.Comment().Comments(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2947,14 +2950,14 @@ func (ec *executionContext) _Post_comments(ctx context.Context, field graphql.Co
 		Object:     "Post",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Comments, nil
+		return ec.resolvers.Post().Comments(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3640,14 +3643,14 @@ func (ec *executionContext) _User_comments(ctx context.Context, field graphql.Co
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Comments, nil
+		return ec.resolvers.User().Comments(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5152,7 +5155,16 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "comments":
-			out.Values[i] = ec._Comment_comments(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_comments(ctx, field, obj)
+				return res
+			})
 		case "votes":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5466,7 +5478,16 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "comments":
-			out.Values[i] = ec._Post_comments(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Post_comments(ctx, field, obj)
+				return res
+			})
 		case "votes":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5691,7 +5712,16 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				return res
 			})
 		case "comments":
-			out.Values[i] = ec._User_comments(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_comments(ctx, field, obj)
+				return res
+			})
 		case "created_at":
 			out.Values[i] = ec._User_created_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
