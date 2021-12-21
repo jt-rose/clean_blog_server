@@ -50,6 +50,7 @@ type ComplexityRoot struct {
 	Comment struct {
 		CommentID           func(childComplexity int) int
 		CommentText         func(childComplexity int) int
+		Comments            func(childComplexity int) int
 		CreatedAt           func(childComplexity int) int
 		Deleted             func(childComplexity int) int
 		HasSubComments      func(childComplexity int) int
@@ -100,6 +101,7 @@ type ComplexityRoot struct {
 	}
 
 	Post struct {
+		Comments  func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		Deleted   func(childComplexity int) int
 		PostID    func(childComplexity int) int
@@ -128,6 +130,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Comments  func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		Email     func(childComplexity int) int
 		Posts     func(childComplexity int) int
@@ -178,7 +181,7 @@ type QueryResolver interface {
 	IsAuthor(ctx context.Context, userID int) (bool, error)
 }
 type UserResolver interface {
-	Posts(ctx context.Context, obj *model.User) ([]*model.Post, error)
+	Posts(ctx context.Context, obj *model.User) (*model.PaginatedPosts, error)
 }
 
 type executableSchema struct {
@@ -209,6 +212,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.CommentText(childComplexity), true
+
+	case "Comment.comments":
+		if e.complexity.Comment.Comments == nil {
+			break
+		}
+
+		return e.complexity.Comment.Comments(childComplexity), true
 
 	case "Comment.created_at":
 		if e.complexity.Comment.CreatedAt == nil {
@@ -504,6 +514,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PaginatedUsers.Users(childComplexity), true
 
+	case "Post.comments":
+		if e.complexity.Post.Comments == nil {
+			break
+		}
+
+		return e.complexity.Post.Comments(childComplexity), true
+
 	case "Post.created_at":
 		if e.complexity.Post.CreatedAt == nil {
 			break
@@ -667,6 +684,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Me(childComplexity), true
 
+	case "User.comments":
+		if e.complexity.User.Comments == nil {
+			break
+		}
+
+		return e.complexity.User.Comments(childComplexity), true
+
 	case "User.created_at":
 		if e.complexity.User.CreatedAt == nil {
 			break
@@ -788,7 +812,8 @@ type User {
   username: String!
   email: String!
   ## password - not shared via graphql
-  posts: [Post]
+  posts: PaginatedPosts ## field resolver
+  comments: PaginatedComments ## field resolver
   created_at: Time!
 }
 
@@ -837,6 +862,7 @@ type Post {
   subtitle: String! ## optional
   post_text: String! ## will store a JSON-serialized version of the HTML markup
   created_at: Time!
+  comments: PaginatedComments ## field resolver for top-level comments
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted posts will still be stored in the database
   ## to allow for undoing a delete and restoring posts / comments / votes
@@ -874,6 +900,7 @@ type Comment {
   user: User! ## field resolver
   comment_text: String!
   created_at: Time!
+  comments: PaginatedComments ## field resolver for subcomments
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted comments will still be stored in the database
   ## to allow for undoing a delete and restoring comments / votes
@@ -1599,6 +1626,38 @@ func (ec *executionContext) _Comment_created_at(ctx context.Context, field graph
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Comment_comments(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Comment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comments, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PaginatedComments)
+	fc.Result = res
+	return ec.marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Comment_votes(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
@@ -2877,6 +2936,38 @@ func (ec *executionContext) _Post_created_at(ctx context.Context, field graphql.
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Post_comments(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comments, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PaginatedComments)
+	fc.Result = res
+	return ec.marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Post_votes(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3533,9 +3624,41 @@ func (ec *executionContext) _User_posts(ctx context.Context, field graphql.Colle
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Post)
+	res := resTmp.(*model.PaginatedPosts)
 	fc.Result = res
-	return ec.marshalOPost2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
+	return ec.marshalOPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_comments(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comments, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PaginatedComments)
+	fc.Result = res
+	return ec.marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -5028,6 +5151,8 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "comments":
+			out.Values[i] = ec._Comment_comments(ctx, field, obj)
 		case "votes":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5340,6 +5465,8 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "comments":
+			out.Values[i] = ec._Post_comments(ctx, field, obj)
 		case "votes":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5563,6 +5690,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				res = ec._User_posts(ctx, field, obj)
 				return res
 			})
+		case "comments":
+			out.Values[i] = ec._User_comments(ctx, field, obj)
 		case "created_at":
 			out.Values[i] = ec._User_created_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -6424,6 +6553,20 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	return graphql.MarshalInt(*v)
+}
+
+func (ec *executionContext) marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx context.Context, sel ast.SelectionSet, v *model.PaginatedComments) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PaginatedComments(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx context.Context, sel ast.SelectionSet, v *model.PaginatedPosts) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PaginatedPosts(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOPost2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v []*model.Post) graphql.Marshaler {

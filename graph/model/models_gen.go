@@ -10,16 +10,17 @@ import (
 )
 
 type Comment struct {
-	CommentID           int       `json:"comment_id"`
-	ResponseToCommentID *int      `json:"response_to_comment_id"`
-	PostID              int       `json:"post_id"`
-	UserID              int       `json:"user_id"`
-	User                *User     `json:"user"`
-	CommentText         string    `json:"comment_text"`
-	CreatedAt           time.Time `json:"created_at"`
-	Votes               *Votes    `json:"votes"`
-	Deleted             bool      `json:"deleted"`
-	HasSubComments      bool      `json:"hasSubComments"`
+	CommentID           int                `json:"comment_id"`
+	ResponseToCommentID *int               `json:"response_to_comment_id"`
+	PostID              int                `json:"post_id"`
+	UserID              int                `json:"user_id"`
+	User                *User              `json:"user"`
+	CommentText         string             `json:"comment_text"`
+	CreatedAt           time.Time          `json:"created_at"`
+	Comments            *PaginatedComments `json:"comments"`
+	Votes               *Votes             `json:"votes"`
+	Deleted             bool               `json:"deleted"`
+	HasSubComments      bool               `json:"hasSubComments"`
 }
 
 type CommentSearch struct {
@@ -51,15 +52,16 @@ type PaginatedUsers struct {
 }
 
 type Post struct {
-	PostID    int       `json:"post_id"`
-	UserID    int       `json:"user_id"`
-	User      *User     `json:"user"`
-	Title     string    `json:"title"`
-	Subtitle  string    `json:"subtitle"`
-	PostText  string    `json:"post_text"`
-	CreatedAt time.Time `json:"created_at"`
-	Votes     *Votes    `json:"votes"`
-	Deleted   bool      `json:"deleted"`
+	PostID    int                `json:"post_id"`
+	UserID    int                `json:"user_id"`
+	User      *User              `json:"user"`
+	Title     string             `json:"title"`
+	Subtitle  string             `json:"subtitle"`
+	PostText  string             `json:"post_text"`
+	CreatedAt time.Time          `json:"created_at"`
+	Comments  *PaginatedComments `json:"comments"`
+	Votes     *Votes             `json:"votes"`
+	Deleted   bool               `json:"deleted"`
 }
 
 type PostInput struct {
@@ -81,11 +83,12 @@ type PostVote struct {
 }
 
 type User struct {
-	UserID    int       `json:"user_id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	Posts     []*Post   `json:"posts"`
-	CreatedAt time.Time `json:"created_at"`
+	UserID    int                `json:"user_id"`
+	Username  string             `json:"username"`
+	Email     string             `json:"email"`
+	Posts     *PaginatedPosts    `json:"posts"`
+	Comments  *PaginatedComments `json:"comments"`
+	CreatedAt time.Time          `json:"created_at"`
 }
 
 type UserInput struct {

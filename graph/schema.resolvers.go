@@ -623,11 +623,11 @@ func (r *queryResolver) IsAuthor(ctx context.Context, userID int) (bool, error) 
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Posts(ctx context.Context, obj *model.User) ([]*model.Post, error) {
+func (r *userResolver) Posts(ctx context.Context, obj *model.User) (*model.PaginatedPosts, error) {
 	// since only the blog author is currently able to create posts
 	// this should only be called for one user
 	// and the dataloader pattern is currently not necessary
-	
+
 	// possibly add pagination later
 	posts, err := sql_models.Posts(qm.Where("user_id = ?", obj.UserID)).All(ctx, database.DB)
 	if err != nil {
