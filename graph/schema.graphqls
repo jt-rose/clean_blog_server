@@ -6,7 +6,8 @@ type User {
   username: String!
   email: String!
   ## password - not shared via graphql
-  posts: [Post]
+  posts: PaginatedPosts ## field resolver
+  comments: PaginatedComments ## field resolver
   created_at: Time!
 }
 
@@ -55,6 +56,7 @@ type Post {
   subtitle: String! ## optional
   post_text: String! ## will store a JSON-serialized version of the HTML markup
   created_at: Time!
+  comments: PaginatedComments ## field resolver for top-level comments
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted posts will still be stored in the database
   ## to allow for undoing a delete and restoring posts / comments / votes
@@ -92,6 +94,7 @@ type Comment {
   user: User! ## field resolver
   comment_text: String!
   created_at: Time!
+  comments: PaginatedComments ## field resolver for subcomments
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted comments will still be stored in the database
   ## to allow for undoing a delete and restoring comments / votes
