@@ -431,7 +431,8 @@ func (r *postResolver) User(ctx context.Context, obj *model.Post) (*model.User, 
 }
 
 func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes, error) {
-	panic(fmt.Errorf("not implemented"))
+	votes, err := dataloader.For(ctx).VotesByPostID.Load(obj.PostID)
+	return &votes, err
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
@@ -469,14 +470,14 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 
 	// get posts from DB with optional search by title
 	var posts sql_models.PostSlice
-	if *postSearch.Title == "" {
+	if postSearch.Title == nil {
 		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
 		posts = retrievedPosts
 	} else {
-		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE %?%", postSearch.Title)).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%" + *postSearch.Title + "%")).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
@@ -484,10 +485,10 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 	}
 
 	// format posts for graphQL response
-	var formattedPosts []*model.Post
-	for _, value := range posts {
+	formattedPosts := make([]*model.Post, len(posts))
+	for i, value := range posts {
 		fmtPost := utils.ConvertPost(value)
-		formattedPosts = append(formattedPosts, &fmtPost)
+		formattedPosts[i] = &fmtPost
 	}
 
 	paginatedResponse := model.PaginatedPosts{

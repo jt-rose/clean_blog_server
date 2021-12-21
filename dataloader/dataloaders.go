@@ -109,6 +109,48 @@ func LoadVotesByCommentID(ctx context.Context) func(ids []int) ([]model.Votes, [
 }
 }
 
+func LoadVotesByPostID(ctx context.Context) func(ids []int) ([]model.Votes, []error){
+	return func(ids []int) ([]model.Votes, []error) {
+		// convert ids to []string
+		var stringArgs []string
+		for _, id := range ids {
+			stringArgs = append(stringArgs, strconv.Itoa(id))
+		}
+
+		// format param of SQL query
+		queryParam := "{"+ strings.Join(stringArgs, ",") + "}"
+
+		// attempt to fetch users
+		postVotes, err := sql_models.PostVotes(qm.Where("post_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
+		
+		// format error
+		formattedErrors := []error{err}
+		if err != nil {
+			return nil, formattedErrors
+		}
+		
+		// total upvote and downvote counts by comment_id
+		voteCounts := make([]model.Votes, len(ids))
+		for i, postID := range ids {
+			votes := model.Votes{}
+			for _, singleVote := range postVotes {
+				if singleVote.PostID == postID {
+					if singleVote.VoteValue == -1 {
+						votes.Downvote++
+					}
+					if singleVote.VoteValue == 1 {
+						votes.Upvote++
+					}
+				}
+			}
+			voteCounts[i] = votes
+		}
+
+		// return vote counts
+		return voteCounts, nil
+}
+}
+
 func UseDataLoaders() gin.HandlerFunc {
 	return func(ginContext *gin.Context) {
 
@@ -123,6 +165,11 @@ func UseDataLoaders() gin.HandlerFunc {
 				maxBatch: 100,
 				wait:     1 * time.Millisecond,
 				fetch: LoadVotesByCommentID(ginContext),
+			},
+			VotesByPostID: VotesLoader{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch: LoadVotesByPostID(ginContext),
 			},
 		})
 
