@@ -920,7 +920,6 @@ enum ParentType {
 input CommentSearch {
   parent_id: Int!
   parent_type: ParentType!
-  response_to_comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
 }
@@ -4920,14 +4919,6 @@ func (ec *executionContext) unmarshalInputCommentSearch(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parent_type"))
 			it.ParentType, err = ec.unmarshalNParentType2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐParentType(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "response_to_comment_id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("response_to_comment_id"))
-			it.ResponseToCommentID, err = ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}

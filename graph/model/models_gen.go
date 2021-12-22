@@ -24,11 +24,10 @@ type Comment struct {
 }
 
 type CommentSearch struct {
-	ParentID            int        `json:"parent_id"`
-	ParentType          ParentType `json:"parent_type"`
-	ResponseToCommentID *int       `json:"response_to_comment_id"`
-	Offset              int        `json:"offset"`
-	Limit               int        `json:"limit"`
+	ParentID   int        `json:"parent_id"`
+	ParentType ParentType `json:"parent_type"`
+	Offset     int        `json:"offset"`
+	Limit      int        `json:"limit"`
 }
 
 type CommentVote struct {

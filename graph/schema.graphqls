@@ -111,7 +111,6 @@ enum ParentType {
 input CommentSearch {
   parent_id: Int!
   parent_type: ParentType!
-  response_to_comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
 }
