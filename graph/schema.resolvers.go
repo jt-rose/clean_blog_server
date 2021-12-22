@@ -584,7 +584,6 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("subComments: ", subComments[0].)
 
 	// format comments for graphQL response
 	var formattedComments []*model.Comment
