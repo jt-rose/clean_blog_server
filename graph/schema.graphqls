@@ -102,8 +102,15 @@ type Comment {
   ## be retrieved via the getManyComments resolver
 }
 
+## distinguish whether a comment is in response to the post or another comment
+enum ParentType {
+  post
+  comment
+}
+
 input CommentSearch {
-  post_id: Int!
+  parent_id: Int!
+  parent_type: ParentType!
   response_to_comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
