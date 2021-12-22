@@ -911,8 +911,15 @@ type Comment {
   ## be retrieved via the getManyComments resolver
 }
 
+## distinguish whether a comment is in response to the post or another comment
+enum ParentType {
+  post
+  comment
+}
+
 input CommentSearch {
-  post_id: Int!
+  parent_id: Int!
+  parent_type: ParentType!
   response_to_comment_id: Int ## nullable comment_id will be used for retrieving subcomments
   offset: Int!
   limit: Int!
@@ -4900,11 +4907,19 @@ func (ec *executionContext) unmarshalInputCommentSearch(ctx context.Context, obj
 
 	for k, v := range asMap {
 		switch k {
-		case "post_id":
+		case "parent_id":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("post_id"))
-			it.PostID, err = ec.unmarshalNInt2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parent_id"))
+			it.ParentID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "parent_type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parent_type"))
+			it.ParentType, err = ec.unmarshalNParentType2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐParentType(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6123,6 +6138,16 @@ func (ec *executionContext) marshalNPaginatedUsers2ᚖgithubᚗcomᚋjtᚑrose�
 		return graphql.Null
 	}
 	return ec._PaginatedUsers(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNParentType2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐParentType(ctx context.Context, v interface{}) (model.ParentType, error) {
+	var res model.ParentType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNParentType2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐParentType(ctx context.Context, sel ast.SelectionSet, v model.ParentType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNPost2githubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v model.Post) graphql.Marshaler {

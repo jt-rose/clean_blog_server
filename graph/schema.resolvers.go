@@ -579,9 +579,10 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 	for _, value := range retrievedComments {
 		currentCommentIDList = append(currentCommentIDList, value.CommentID)
 	}
-	// confirm []int works appropriately as qm.WhereIn arg
-	// the specs showed values being applied one by one, but slice... is not accepted
-	subComments, err := sql_models.Comments(qm.WhereIn("response_to_comment_id IN ?", currentCommentIDList)).All(ctx, database.DB)
+
+	// format ids as string for SQL ANY() argument
+	queryParam := utils.FormatSliceForSQLParams(currentCommentIDList)
+	subComments, err := sql_models.Comments(qm.WhereIn("response_to_comment_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}

@@ -24,10 +24,11 @@ type Comment struct {
 }
 
 type CommentSearch struct {
-	PostID              int  `json:"post_id"`
-	ResponseToCommentID *int `json:"response_to_comment_id"`
-	Offset              int  `json:"offset"`
-	Limit               int  `json:"limit"`
+	ParentID            int        `json:"parent_id"`
+	ParentType          ParentType `json:"parent_type"`
+	ResponseToCommentID *int       `json:"response_to_comment_id"`
+	Offset              int        `json:"offset"`
+	Limit               int        `json:"limit"`
 }
 
 type CommentVote struct {
@@ -106,6 +107,47 @@ type UserSearch struct {
 type Votes struct {
 	Upvote   int `json:"upvote"`
 	Downvote int `json:"downvote"`
+}
+
+type ParentType string
+
+const (
+	ParentTypePost    ParentType = "post"
+	ParentTypeComment ParentType = "comment"
+)
+
+var AllParentType = []ParentType{
+	ParentTypePost,
+	ParentTypeComment,
+}
+
+func (e ParentType) IsValid() bool {
+	switch e {
+	case ParentTypePost, ParentTypeComment:
+		return true
+	}
+	return false
+}
+
+func (e ParentType) String() string {
+	return string(e)
+}
+
+func (e *ParentType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ParentType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ParentType", str)
+	}
+	return nil
+}
+
+func (e ParentType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 type VoteValue string
