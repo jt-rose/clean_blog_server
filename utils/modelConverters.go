@@ -61,6 +61,7 @@ func ConvertComment(sql_comment *sql_models.Comment, hasSubComments bool) gql_mo
 			UserID: sql_comment.UserID,
 			CommentText: sql_comment.CommentText,
 			CreatedAt: sql_comment.CreatedAt,
+			HasSubComments: hasSubComments,
 		}
 	}
 }
