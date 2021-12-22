@@ -561,15 +561,13 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 	}
 
 	// get comments from DB
-	fmt.Println("comment id: ", commentSearch.ResponseToCommentID)
-	searchForSubcomments := commentSearch.ResponseToCommentID != nil
-	var whereClause qm.QueryMod
-	if searchForSubcomments {
-		whereClause = qm.Where("post_id = ? AND response_to_comment_id = ?", commentSearch.PostID, commentSearch.ResponseToCommentID)
+	var whereClause string
+	if commentSearch.ParentType == model.ParentTypePost {
+		whereClause = "post_id = ?"
 	} else {
-		whereClause = qm.Where("post_id = ? AND response_to_comment_id = NULL", commentSearch.PostID)
+		whereClause = "response_to_comment_id = ?"
 	}
-	retrievedComments, err := sql_models.Comments(whereClause, qm.Limit(commentSearch.Limit), qm.Offset(commentSearch.Offset)).All(ctx, database.DB)
+	retrievedComments, err := sql_models.Comments(qm.Where(whereClause, commentSearch.ParentID), qm.Limit(commentSearch.Limit), qm.Offset(commentSearch.Offset)).All(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -582,16 +580,17 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 
 	// format ids as string for SQL ANY() argument
 	queryParam := utils.FormatSliceForSQLParams(currentCommentIDList)
-	subComments, err := sql_models.Comments(qm.WhereIn("response_to_comment_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
+	subComments, err := sql_models.Comments(qm.Where("response_to_comment_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
+	//fmt.Println("subComments: ", subComments[0].)
 
 	// format comments for graphQL response
 	var formattedComments []*model.Comment
 	for _, comment := range retrievedComments {
 		// check if comment has subcomments
-		var hasSubComment bool
+		hasSubComment := false
 		for _, subComment := range subComments {
 			if subComment.ResponseToCommentID.Int == comment.CommentID {
 				hasSubComment = true
