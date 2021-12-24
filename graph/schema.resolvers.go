@@ -28,7 +28,8 @@ func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.
 }
 
 func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) (*model.PaginatedComments, error) {
-	panic(fmt.Errorf("not implemented"))
+	paginatedComments, err := dataloader.For(ctx).CommentByCommentID.Load(obj.CommentID)
+	return &paginatedComments, err
 }
 
 func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model.Votes, error) {
