@@ -435,7 +435,8 @@ func (r *postResolver) User(ctx context.Context, obj *model.Post) (*model.User, 
 }
 
 func (r *postResolver) Comments(ctx context.Context, obj *model.Post) (*model.PaginatedComments, error) {
-	panic(fmt.Errorf("not implemented"))
+	paginatedComments, err := dataloader.For(ctx).CommentByPostID.Load(obj.PostID)
+	return &paginatedComments, err
 }
 
 func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes, error) {

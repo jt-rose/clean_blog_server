@@ -16,8 +16,8 @@ const loadersKey = "dataloaders"
 
 type Loaders struct {
 	UserById UserLoader
-	CommentByUserID CommentLoader
-	CommentByPostID CommentLoader
+	CommentByUserID PaginatedCommentsLoader
+	CommentByPostID PaginatedCommentsLoader
 	VotesByPostID VotesLoader
 	VotesByCommentID VotesLoader
 }
@@ -56,6 +56,70 @@ func LoadUsers(ctx context.Context) func(ids []int) ([]model.User, []error){
 
 		// return sorted users
 		return sortedUsers, nil
+}
+}
+
+func LoadCommentsByPostID(ctx context.Context) func(ids []int) ([]model.PaginatedComments, []error){
+	return func(ids []int) ([]model.PaginatedComments, []error) {
+		// format post ids as SQL string param
+		queryParam := utils.FormatSliceForSQLParams(ids)
+
+		// attempt to fetch all top-level comments on each post
+		comments, err := sql_models.Comments(qm.Where("post_id = ANY(?::int[]) AND response_to_comment_id IS NULL", queryParam)).All(ctx, database.DB)
+		if err != nil {
+			return nil, []error{err}
+		}
+		//fmt.Println("comments: ", comments[0].CommentID)
+		// get the comment id for each comment found
+		var currentCommentIDList []int
+	for _, value := range comments {
+		currentCommentIDList = append(currentCommentIDList, value.CommentID)
+	}
+
+	// format comment ids as SQL string param
+	queryParam = utils.FormatSliceForSQLParams(currentCommentIDList)
+	// check if subcomments exist that reference the current comment ids as a parent
+	subComments, err := sql_models.Comments(qm.Where("response_to_comment_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	// format comments for graphQL response and note if they have subcomments
+	var formattedComments []model.Comment
+	for _, comment := range comments {
+		// check if comment has subcomments
+		hasSubComment := false
+		for _, subComment := range subComments {
+			if subComment.ResponseToCommentID.Int == comment.CommentID {
+				hasSubComment = true
+			}
+		}
+		fmtComment := utils.ConvertComment(comment, hasSubComment)
+		formattedComments = append(formattedComments, fmtComment)
+	}
+	
+	// sort formatted comments by post ids from field resolver args
+	// and format each association as a PaginatedComments response
+	var formattedPaginatedComments []model.PaginatedComments
+	for _, postID := range ids {
+		var commentsByPostID []*model.Comment
+		for _, comment := range formattedComments {
+			if comment.PostID == postID {
+				// preserve the current comments data before comment is updated
+				currentComment := *&comment
+				commentsByPostID = append(commentsByPostID, &currentComment)
+			}
+			
+		}
+
+		paginatedResponse := model.PaginatedComments{
+			Comments: commentsByPostID,
+			More: false,
+		}
+		formattedPaginatedComments = append(formattedPaginatedComments, paginatedResponse)
+	}
+
+	return formattedPaginatedComments, nil
 }
 }
 
@@ -140,6 +204,11 @@ func UseDataLoaders() gin.HandlerFunc {
 				maxBatch: 100,
 				wait:     1 * time.Millisecond,
 				fetch: LoadUsers(ginContext),
+			},
+			CommentByPostID: PaginatedCommentsLoader{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch: LoadCommentsByPostID(ginContext),
 			},
 			VotesByCommentID: VotesLoader{
 				maxBatch: 100,
