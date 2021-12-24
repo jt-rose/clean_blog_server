@@ -521,7 +521,7 @@ func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserS
 
 	// get users from DB with optional search by username
 	var users sql_models.UserSlice
-	if *userSearch.Username == "" {
+	if userSearch.Username == nil {
 		retrievedUsers, err := sql_models.Users(qm.Limit(limitPlusOne), qm.Offset(userSearch.Offset)).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
@@ -675,7 +675,8 @@ func (r *userResolver) Posts(ctx context.Context, obj *model.User) (*model.Pagin
 }
 
 func (r *userResolver) Comments(ctx context.Context, obj *model.User) (*model.PaginatedComments, error) {
-	panic(fmt.Errorf("not implemented"))
+	paginatedComments, err := dataloader.For(ctx).CommentByUserID.Load(obj.UserID)
+	return &paginatedComments, err
 }
 
 // Comment returns generated.CommentResolver implementation.
