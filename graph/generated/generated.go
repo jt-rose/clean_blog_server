@@ -68,21 +68,22 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddComment      func(childComplexity int, postID int, responseToCommentID *int, commentText string) int
-		AddPost         func(childComplexity int, postInput model.PostInput) int
-		DeleteComment   func(childComplexity int, commentID int) int
-		DeletePost      func(childComplexity int, postID int) int
-		EditComment     func(childComplexity int, commentID int, newCommentText string) int
-		EditPost        func(childComplexity int, postID int, postInput model.PostInput) int
-		ForgotPassword  func(childComplexity int, username string) int
-		Login           func(childComplexity int, username string, password string) int
-		Logout          func(childComplexity int) int
-		RegisterNewUser func(childComplexity int, userInput model.UserInput) int
-		ResetPassword   func(childComplexity int, username string, newPassword string) int
-		RestoreComment  func(childComplexity int, commentID int) int
-		RestorePost     func(childComplexity int, postID int) int
-		VoteOnComment   func(childComplexity int, commentID int, voteValue model.VoteValue) int
-		VoteOnPost      func(childComplexity int, postID int, voteValue model.VoteValue) int
+		AccessPasswordReset func(childComplexity int, resetKey string) int
+		AddComment          func(childComplexity int, postID int, responseToCommentID *int, commentText string) int
+		AddPost             func(childComplexity int, postInput model.PostInput) int
+		DeleteComment       func(childComplexity int, commentID int) int
+		DeletePost          func(childComplexity int, postID int) int
+		EditComment         func(childComplexity int, commentID int, newCommentText string) int
+		EditPost            func(childComplexity int, postID int, postInput model.PostInput) int
+		ForgotPassword      func(childComplexity int, username string) int
+		Login               func(childComplexity int, username string, password string) int
+		Logout              func(childComplexity int) int
+		RegisterNewUser     func(childComplexity int, userInput model.UserInput) int
+		ResetPassword       func(childComplexity int, username string, newPassword string) int
+		RestoreComment      func(childComplexity int, commentID int) int
+		RestorePost         func(childComplexity int, postID int) int
+		VoteOnComment       func(childComplexity int, commentID int, voteValue model.VoteValue) int
+		VoteOnPost          func(childComplexity int, postID int, voteValue model.VoteValue) int
 	}
 
 	PaginatedComments struct {
@@ -165,6 +166,7 @@ type MutationResolver interface {
 	Login(ctx context.Context, username string, password string) (*model.User, error)
 	Logout(ctx context.Context) (bool, error)
 	ForgotPassword(ctx context.Context, username string) (bool, error)
+	AccessPasswordReset(ctx context.Context, resetKey string) (*model.User, error)
 	ResetPassword(ctx context.Context, username string, newPassword string) (*model.User, error)
 }
 type PostResolver interface {
@@ -299,6 +301,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CommentVote.VoteValue(childComplexity), true
+
+	case "Mutation.accessPasswordReset":
+		if e.complexity.Mutation.AccessPasswordReset == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_accessPasswordReset_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AccessPasswordReset(childComplexity, args["resetKey"].(string)), true
 
 	case "Mutation.addComment":
 		if e.complexity.Mutation.AddComment == nil {
@@ -960,6 +974,7 @@ type Mutation {
   login(username: String!, password: String!): User!
   logout: Boolean!
   forgotPassword(username: String!): Boolean!
+  accessPasswordReset(resetKey: String!): User
   resetPassword(username: String!, new_password: String!): User!
 }
 `, BuiltIn: false},
@@ -969,6 +984,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_accessPasswordReset_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["resetKey"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resetKey"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resetKey"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_addComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -2458,6 +2488,45 @@ func (ec *executionContext) _Mutation_forgotPassword(ctx context.Context, field 
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_accessPasswordReset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_accessPasswordReset_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AccessPasswordReset(rctx, args["resetKey"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_resetPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5328,6 +5397,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "accessPasswordReset":
+			out.Values[i] = ec._Mutation_accessPasswordReset(ctx, field)
 		case "resetPassword":
 			out.Values[i] = ec._Mutation_resetPassword(ctx, field)
 			if out.Values[i] == graphql.Null {

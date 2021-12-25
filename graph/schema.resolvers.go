@@ -426,6 +426,10 @@ func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) 
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *mutationResolver) ResetPassword(ctx context.Context, username string, newPassword string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
