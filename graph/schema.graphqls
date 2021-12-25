@@ -152,5 +152,5 @@ type Mutation {
   logout: Boolean!
   forgotPassword(username: String!): Boolean!
   accessPasswordReset(resetKey: String!): User
-  resetPassword(username: String!, new_password: String!): User!
+  resetPassword(resetKey: String!, user_id: Int!, new_password: String!): User!
 }

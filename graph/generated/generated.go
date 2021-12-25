@@ -79,7 +79,7 @@ type ComplexityRoot struct {
 		Login               func(childComplexity int, username string, password string) int
 		Logout              func(childComplexity int) int
 		RegisterNewUser     func(childComplexity int, userInput model.UserInput) int
-		ResetPassword       func(childComplexity int, username string, newPassword string) int
+		ResetPassword       func(childComplexity int, resetKey string, userID int, newPassword string) int
 		RestoreComment      func(childComplexity int, commentID int) int
 		RestorePost         func(childComplexity int, postID int) int
 		VoteOnComment       func(childComplexity int, commentID int, voteValue model.VoteValue) int
@@ -167,7 +167,7 @@ type MutationResolver interface {
 	Logout(ctx context.Context) (bool, error)
 	ForgotPassword(ctx context.Context, username string) (bool, error)
 	AccessPasswordReset(ctx context.Context, resetKey string) (*model.User, error)
-	ResetPassword(ctx context.Context, username string, newPassword string) (*model.User, error)
+	ResetPassword(ctx context.Context, resetKey string, userID int, newPassword string) (*model.User, error)
 }
 type PostResolver interface {
 	User(ctx context.Context, obj *model.Post) (*model.User, error)
@@ -439,7 +439,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ResetPassword(childComplexity, args["username"].(string), args["new_password"].(string)), true
+		return e.complexity.Mutation.ResetPassword(childComplexity, args["resetKey"].(string), args["user_id"].(int), args["new_password"].(string)), true
 
 	case "Mutation.restoreComment":
 		if e.complexity.Mutation.RestoreComment == nil {
@@ -975,7 +975,7 @@ type Mutation {
   logout: Boolean!
   forgotPassword(username: String!): Boolean!
   accessPasswordReset(resetKey: String!): User
-  resetPassword(username: String!, new_password: String!): User!
+  resetPassword(resetKey: String!, user_id: Int!, new_password: String!): User!
 }
 `, BuiltIn: false},
 }
@@ -1184,23 +1184,32 @@ func (ec *executionContext) field_Mutation_resetPassword_args(ctx context.Contex
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["username"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+	if tmp, ok := rawArgs["resetKey"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resetKey"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["username"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["new_password"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+	args["resetKey"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["new_password"] = arg1
+	args["user_id"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["new_password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["new_password"] = arg2
 	return args, nil
 }
 
@@ -2554,7 +2563,7 @@ func (ec *executionContext) _Mutation_resetPassword(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ResetPassword(rctx, args["username"].(string), args["new_password"].(string))
+		return ec.resolvers.Mutation().ResetPassword(rctx, args["resetKey"].(string), args["user_id"].(int), args["new_password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

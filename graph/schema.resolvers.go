@@ -423,14 +423,22 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 }
 
 func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) (bool, error) {
+	// generate redis key using uuid that contains userid
+	// which will be obtained through the url
+	// and the url link shared via email with the user
+	// so that only someone with access to the user email on record
+	// should recieve the reset link
+
 	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey string) (*model.User, error) {
+	// confirm the uuid-generated password-reset url is in our redis DB
+	// before presenting reset form to the user
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) ResetPassword(ctx context.Context, username string, newPassword string) (*model.User, error) {
+func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, userID int, newPassword string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
