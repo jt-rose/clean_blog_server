@@ -166,7 +166,7 @@ type MutationResolver interface {
 	Login(ctx context.Context, username string, password string) (*model.User, error)
 	Logout(ctx context.Context) (bool, error)
 	ForgotPassword(ctx context.Context, username string) (bool, error)
-	AccessPasswordReset(ctx context.Context, resetKey string) (*model.User, error)
+	AccessPasswordReset(ctx context.Context, resetKey string) (bool, error)
 	ResetPassword(ctx context.Context, resetKey string, userID int, newPassword string) (*model.User, error)
 }
 type PostResolver interface {
@@ -974,7 +974,7 @@ type Mutation {
   login(username: String!, password: String!): User!
   logout: Boolean!
   forgotPassword(username: String!): Boolean!
-  accessPasswordReset(resetKey: String!): User
+  accessPasswordReset(resetKey: String!): Boolean!
   resetPassword(resetKey: String!, user_id: Int!, new_password: String!): User!
 }
 `, BuiltIn: false},
@@ -2531,11 +2531,14 @@ func (ec *executionContext) _Mutation_accessPasswordReset(ctx context.Context, f
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_resetPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5408,6 +5411,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "accessPasswordReset":
 			out.Values[i] = ec._Mutation_accessPasswordReset(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "resetPassword":
 			out.Values[i] = ec._Mutation_resetPassword(ctx, field)
 			if out.Values[i] == graphql.Null {

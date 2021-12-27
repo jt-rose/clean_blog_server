@@ -151,6 +151,6 @@ type Mutation {
   login(username: String!, password: String!): User!
   logout: Boolean!
   forgotPassword(username: String!): Boolean!
-  accessPasswordReset(resetKey: String!): User
+  accessPasswordReset(resetKey: String!): Boolean!
   resetPassword(resetKey: String!, user_id: Int!, new_password: String!): User!
 }

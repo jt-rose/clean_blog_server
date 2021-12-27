@@ -450,8 +450,8 @@ func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) 
 
 	// store user_id in redis using the unique key
 	// with a one hour expiration
-	_, err = database.RedisClient.Set(ctx, resetKey.String(), user.UserID, time.Hour * 1).Result()
-	
+	_, err = database.RedisClient.Set(ctx, resetKey.String(), user.UserID, time.Hour*1).Result()
+
 	if err != nil {
 		return false, err
 	}
@@ -460,16 +460,21 @@ func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) 
 	return true, nil
 }
 
-func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey string) (*model.User, error) {
+func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey string) (bool, error) {
 	// confirm the uuid-generated password-reset url is in our redis DB
 	// before presenting reset form to the user
-	panic(fmt.Errorf("not implemented"))
+	_, err := database.RedisClient.Get(ctx, resetKey).Result()
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, userID int, newPassword string) (*model.User, error) {
 	// confirm reset key is active in redis
 	// and update user password + sign them in
-	
+
 	panic(fmt.Errorf("not implemented"))
 }
 
