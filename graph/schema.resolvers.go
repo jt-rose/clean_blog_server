@@ -6,7 +6,7 @@ package graph
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -473,9 +473,53 @@ func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey str
 
 func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, userID int, newPassword string) (*model.User, error) {
 	// confirm reset key is active in redis
-	// and update user password + sign them in
+	user_id, err := database.RedisClient.Get(ctx, resetKey).Result()
+	if err != nil {
+		return nil, err
+	}
 
-	panic(fmt.Errorf("not implemented"))
+	// convert user_id to int
+	user_id_int, err := strconv.Atoi(user_id)
+	if err != nil {
+		return nil, err
+	}
+	
+	// locate user in database
+	user, err := sql_models.FindUser(ctx, database.DB, user_id_int)
+	if err != nil || user == nil {
+		return nil, err
+	}
+
+	// hash new password
+	hashedPassword, err := utils.HashPassword(newPassword)
+
+	if err != nil {
+		return nil, err
+	}
+	
+	// update user password
+	user.UserPassword = hashedPassword
+	_, err = user.Update(ctx, database.DB, boil.Infer())
+	if err != nil {
+		return nil, err
+	}
+
+	// get gin context/ sessions and sign in user
+	_, session, err := middleware.GetGinContextAndSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	session.Set("user", user_id_int)
+	err = session.Save()
+	if err != nil {
+		return nil, err
+	}
+
+	// convert sql user object to graphQL user object
+	fmtUser := utils.ConvertUser(user)
+
+	// return graphql user object
+	return &fmtUser, nil
 }
 
 func (r *postResolver) User(ctx context.Context, obj *model.Post) (*model.User, error) {
