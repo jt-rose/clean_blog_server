@@ -11,6 +11,7 @@ type ENV_Variables struct {
 	DATABASE_URL  string
 	DATABASE_PORT string
 	SERVER_PORT   string
+	FRONTEND_URL string
 	SESSION_KEY   string
 	EMAIL_ADDRESS string
 	EMAIL_PASSWORD string
@@ -27,6 +28,7 @@ func loadEnvVariables() ENV_Variables {
 		DATABASE_URL:  os.Getenv("DATABASE_URL"),
 		DATABASE_PORT: os.Getenv("DATABASE_URL"),
 		SERVER_PORT:   os.Getenv("SERVER_PORT"),
+		FRONTEND_URL: os.Getenv("FRONTEND_URL"),
 		SESSION_KEY:      os.Getenv("SESSION_KEY"),
 		EMAIL_ADDRESS: os.Getenv("EMAIL_ADDRESS"),
 		EMAIL_PASSWORD: os.Getenv("EMAIL_PASSWORD"),
