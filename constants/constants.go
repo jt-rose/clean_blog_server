@@ -15,7 +15,6 @@ type ENV_Variables struct {
 	SESSION_KEY   string
 	EMAIL_ADDRESS string
 	EMAIL_PASSWORD string
-	SAMPLE_TO_EMAIL string
 }
 
 func loadEnvVariables() ENV_Variables {
@@ -32,7 +31,6 @@ func loadEnvVariables() ENV_Variables {
 		SESSION_KEY:      os.Getenv("SESSION_KEY"),
 		EMAIL_ADDRESS: os.Getenv("EMAIL_ADDRESS"),
 		EMAIL_PASSWORD: os.Getenv("EMAIL_PASSWORD"),
-		SAMPLE_TO_EMAIL: os.Getenv("SAMPLE_TO_EMAIL"),
 	}
 
 	if ENV_VAR.DATABASE_URL == "" || ENV_VAR.DATABASE_PORT == "" || ENV_VAR.SERVER_PORT == "" || ENV_VAR.SESSION_KEY == "" {
