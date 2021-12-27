@@ -426,21 +426,16 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 
 func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) (bool, error) {
 	// confirm username / email correspond to user in DB
-	user, err := sql_models.Users(qm.Where("username = ?", username), qm.Or("user_email = ?", username)).One(ctx, database.DB)
-	if err != nil {
+	user, err := sql_models.Users(qm.Where("username = ?", username), qm.Or("email = ?", username)).One(ctx, database.DB)
+	if err != nil  || user == nil {
 		return false, err
-	}
-
-	// if a user is not found matching the email/ username, return false
-	if user != nil {
-		return false, nil
 	}
 
 	// generate redis key using uuid that contains userid
 	// which will be obtained through the url
 	// and the url link shared via email with the user
 	// so that only someone with access to the user email on record
-	// should recieve the reset link
+	// should receive the reset link
 
 	// generate unique redis key
 	resetKeyUUID, err := uuid.NewV4()
