@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/jt-rose/clean_blog_server/constants"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
 	"github.com/jt-rose/clean_blog_server/graph/model"
@@ -423,13 +425,39 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 }
 
 func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) (bool, error) {
+	// confirm username / email correspond to user in DB
+	user, err := sql_models.Users(qm.Where("username = ?", username), qm.Or("user_email = ?", username)).One(ctx, database.DB)
+	if err != nil {
+		return false, err
+	}
+
+	// if a user is not found matching the email/ username, return false
+	if user != nil {
+		return false, nil
+	}
+
 	// generate redis key using uuid that contains userid
 	// which will be obtained through the url
 	// and the url link shared via email with the user
 	// so that only someone with access to the user email on record
 	// should recieve the reset link
 
-	panic(fmt.Errorf("not implemented"))
+	// generate unique redis key
+	resetKey, err := uuid.NewV4()
+	if err != nil {
+		return false, err
+	}
+
+	// store user_id in redis using the unique key
+	// with a one hour expiration
+	_, err = database.RedisClient.Set(ctx, resetKey.String(), user.UserID, time.Hour * 1).Result()
+	
+	if err != nil {
+		return false, err
+	}
+
+	// return true if successful
+	return true, nil
 }
 
 func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey string) (*model.User, error) {
@@ -439,6 +467,9 @@ func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey str
 }
 
 func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, userID int, newPassword string) (*model.User, error) {
+	// confirm reset key is active in redis
+	// and update user password + sign them in
+	
 	panic(fmt.Errorf("not implemented"))
 }
 
