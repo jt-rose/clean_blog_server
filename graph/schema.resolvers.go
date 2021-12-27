@@ -443,15 +443,22 @@ func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) 
 	// should recieve the reset link
 
 	// generate unique redis key
-	resetKey, err := uuid.NewV4()
+	resetKeyUUID, err := uuid.NewV4()
 	if err != nil {
 		return false, err
 	}
 
+	resetKey := resetKeyUUID.String()
 	// store user_id in redis using the unique key
 	// with a one hour expiration
-	_, err = database.RedisClient.Set(ctx, resetKey.String(), user.UserID, time.Hour*1).Result()
+	_, err = database.RedisClient.Set(ctx, resetKey, user.UserID, time.Hour*1).Result()
 
+	if err != nil {
+		return false, err
+	}
+
+	// send email with custom password reset link to user's email
+	err = utils.SendPasswordResetEmail(user.Email, resetKey)
 	if err != nil {
 		return false, err
 	}
