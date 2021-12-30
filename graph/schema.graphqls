@@ -123,19 +123,19 @@ type PaginatedComments {
 type Query {
   getPost(post_id: Int!): Post ## nullable for when no post found
   getUser(user_id: Int!): User ## nullable for when no user found
-  getManyPosts(postSearch: PostSearch!, user_id: Int!): PaginatedPosts!
+  getManyPosts(postSearch: PostSearch!, author_id: Int!): PaginatedPosts!
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
   # authentication:
   me: User # authenticate signed in user
-  isAuthor(user_id: Int!): Boolean! # authenticate author
+  isAuthor(author_id: Int!): Boolean! # authenticate author
 }
 
 type Mutation {
-  addPost(postInput: PostInput!): Post!
-  editPost(post_id: Int!, postInput: PostInput!): Post!
-  deletePost(post_id: Int!): Boolean!
-  restorePost(post_id: Int!): Boolean!
+  addPost(postInput: PostInput!, author_id: Int!): Post!
+  editPost(post_id: Int!, postInput: PostInput!, author_id: Int!): Post!
+  deletePost(post_id: Int!, author_id: Int!): Boolean!
+  restorePost(post_id: Int!, author_id: Int!): Boolean!
   addComment(
     post_id: Int!
     response_to_comment_id: Int

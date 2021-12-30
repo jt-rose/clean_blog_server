@@ -70,18 +70,18 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AccessPasswordReset func(childComplexity int, resetKey string) int
 		AddComment          func(childComplexity int, postID int, responseToCommentID *int, commentText string) int
-		AddPost             func(childComplexity int, postInput model.PostInput) int
+		AddPost             func(childComplexity int, postInput model.PostInput, authorID int) int
 		DeleteComment       func(childComplexity int, commentID int) int
-		DeletePost          func(childComplexity int, postID int) int
+		DeletePost          func(childComplexity int, postID int, authorID int) int
 		EditComment         func(childComplexity int, commentID int, newCommentText string) int
-		EditPost            func(childComplexity int, postID int, postInput model.PostInput) int
+		EditPost            func(childComplexity int, postID int, postInput model.PostInput, authorID int) int
 		ForgotPassword      func(childComplexity int, username string) int
 		Login               func(childComplexity int, username string, password string) int
 		Logout              func(childComplexity int) int
 		RegisterNewUser     func(childComplexity int, userInput model.UserInput) int
 		ResetPassword       func(childComplexity int, resetKey string, userID int, newPassword string) int
 		RestoreComment      func(childComplexity int, commentID int) int
-		RestorePost         func(childComplexity int, postID int) int
+		RestorePost         func(childComplexity int, postID int, authorID int) int
 		VoteOnComment       func(childComplexity int, commentID int, voteValue model.VoteValue) int
 		VoteOnPost          func(childComplexity int, postID int, voteValue model.VoteValue) int
 	}
@@ -122,11 +122,11 @@ type ComplexityRoot struct {
 
 	Query struct {
 		GetManyComments func(childComplexity int, commentSearch model.CommentSearch) int
-		GetManyPosts    func(childComplexity int, postSearch model.PostSearch, userID int) int
+		GetManyPosts    func(childComplexity int, postSearch model.PostSearch, authorID int) int
 		GetManyUsers    func(childComplexity int, userSearch model.UserSearch) int
 		GetPost         func(childComplexity int, postID int) int
 		GetUser         func(childComplexity int, userID int) int
-		IsAuthor        func(childComplexity int, userID int) int
+		IsAuthor        func(childComplexity int, authorID int) int
 		Me              func(childComplexity int) int
 	}
 
@@ -152,10 +152,10 @@ type CommentResolver interface {
 	Votes(ctx context.Context, obj *model.Comment) (*model.Votes, error)
 }
 type MutationResolver interface {
-	AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error)
-	EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error)
-	DeletePost(ctx context.Context, postID int) (bool, error)
-	RestorePost(ctx context.Context, postID int) (bool, error)
+	AddPost(ctx context.Context, postInput model.PostInput, authorID int) (*model.Post, error)
+	EditPost(ctx context.Context, postID int, postInput model.PostInput, authorID int) (*model.Post, error)
+	DeletePost(ctx context.Context, postID int, authorID int) (bool, error)
+	RestorePost(ctx context.Context, postID int, authorID int) (bool, error)
 	AddComment(ctx context.Context, postID int, responseToCommentID *int, commentText string) (*model.Comment, error)
 	EditComment(ctx context.Context, commentID int, newCommentText string) (*model.Comment, error)
 	DeleteComment(ctx context.Context, commentID int) (bool, error)
@@ -178,11 +178,11 @@ type PostResolver interface {
 type QueryResolver interface {
 	GetPost(ctx context.Context, postID int) (*model.Post, error)
 	GetUser(ctx context.Context, userID int) (*model.User, error)
-	GetManyPosts(ctx context.Context, postSearch model.PostSearch, userID int) (*model.PaginatedPosts, error)
+	GetManyPosts(ctx context.Context, postSearch model.PostSearch, authorID int) (*model.PaginatedPosts, error)
 	GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error)
 	GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error)
 	Me(ctx context.Context) (*model.User, error)
-	IsAuthor(ctx context.Context, userID int) (bool, error)
+	IsAuthor(ctx context.Context, authorID int) (bool, error)
 }
 type UserResolver interface {
 	Posts(ctx context.Context, obj *model.User) (*model.PaginatedPosts, error)
@@ -336,7 +336,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddPost(childComplexity, args["postInput"].(model.PostInput)), true
+		return e.complexity.Mutation.AddPost(childComplexity, args["postInput"].(model.PostInput), args["author_id"].(int)), true
 
 	case "Mutation.deleteComment":
 		if e.complexity.Mutation.DeleteComment == nil {
@@ -360,7 +360,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeletePost(childComplexity, args["post_id"].(int)), true
+		return e.complexity.Mutation.DeletePost(childComplexity, args["post_id"].(int), args["author_id"].(int)), true
 
 	case "Mutation.editComment":
 		if e.complexity.Mutation.EditComment == nil {
@@ -384,7 +384,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.EditPost(childComplexity, args["post_id"].(int), args["postInput"].(model.PostInput)), true
+		return e.complexity.Mutation.EditPost(childComplexity, args["post_id"].(int), args["postInput"].(model.PostInput), args["author_id"].(int)), true
 
 	case "Mutation.forgotPassword":
 		if e.complexity.Mutation.ForgotPassword == nil {
@@ -463,7 +463,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RestorePost(childComplexity, args["post_id"].(int)), true
+		return e.complexity.Mutation.RestorePost(childComplexity, args["post_id"].(int), args["author_id"].(int)), true
 
 	case "Mutation.voteOnComment":
 		if e.complexity.Mutation.VoteOnComment == nil {
@@ -644,7 +644,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetManyPosts(childComplexity, args["postSearch"].(model.PostSearch), args["user_id"].(int)), true
+		return e.complexity.Query.GetManyPosts(childComplexity, args["postSearch"].(model.PostSearch), args["author_id"].(int)), true
 
 	case "Query.getManyUsers":
 		if e.complexity.Query.GetManyUsers == nil {
@@ -692,7 +692,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.IsAuthor(childComplexity, args["user_id"].(int)), true
+		return e.complexity.Query.IsAuthor(childComplexity, args["author_id"].(int)), true
 
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
@@ -946,19 +946,19 @@ type PaginatedComments {
 type Query {
   getPost(post_id: Int!): Post ## nullable for when no post found
   getUser(user_id: Int!): User ## nullable for when no user found
-  getManyPosts(postSearch: PostSearch!, user_id: Int!): PaginatedPosts!
+  getManyPosts(postSearch: PostSearch!, author_id: Int!): PaginatedPosts!
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
   # authentication:
   me: User # authenticate signed in user
-  isAuthor(user_id: Int!): Boolean! # authenticate author
+  isAuthor(author_id: Int!): Boolean! # authenticate author
 }
 
 type Mutation {
-  addPost(postInput: PostInput!): Post!
-  editPost(post_id: Int!, postInput: PostInput!): Post!
-  deletePost(post_id: Int!): Boolean!
-  restorePost(post_id: Int!): Boolean!
+  addPost(postInput: PostInput!, author_id: Int!): Post!
+  editPost(post_id: Int!, postInput: PostInput!, author_id: Int!): Post!
+  deletePost(post_id: Int!, author_id: Int!): Boolean!
+  restorePost(post_id: Int!, author_id: Int!): Boolean!
   addComment(
     post_id: Int!
     response_to_comment_id: Int
@@ -1045,6 +1045,15 @@ func (ec *executionContext) field_Mutation_addPost_args(ctx context.Context, raw
 		}
 	}
 	args["postInput"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["author_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("author_id"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["author_id"] = arg1
 	return args, nil
 }
 
@@ -1075,6 +1084,15 @@ func (ec *executionContext) field_Mutation_deletePost_args(ctx context.Context, 
 		}
 	}
 	args["post_id"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["author_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("author_id"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["author_id"] = arg1
 	return args, nil
 }
 
@@ -1123,6 +1141,15 @@ func (ec *executionContext) field_Mutation_editPost_args(ctx context.Context, ra
 		}
 	}
 	args["postInput"] = arg1
+	var arg2 int
+	if tmp, ok := rawArgs["author_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("author_id"))
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["author_id"] = arg2
 	return args, nil
 }
 
@@ -1240,6 +1267,15 @@ func (ec *executionContext) field_Mutation_restorePost_args(ctx context.Context,
 		}
 	}
 	args["post_id"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["author_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("author_id"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["author_id"] = arg1
 	return args, nil
 }
 
@@ -1334,14 +1370,14 @@ func (ec *executionContext) field_Query_getManyPosts_args(ctx context.Context, r
 	}
 	args["postSearch"] = arg0
 	var arg1 int
-	if tmp, ok := rawArgs["user_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+	if tmp, ok := rawArgs["author_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("author_id"))
 		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["user_id"] = arg1
+	args["author_id"] = arg1
 	return args, nil
 }
 
@@ -1394,14 +1430,14 @@ func (ec *executionContext) field_Query_isAuthor_args(ctx context.Context, rawAr
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
-	if tmp, ok := rawArgs["user_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+	if tmp, ok := rawArgs["author_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("author_id"))
 		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["user_id"] = arg0
+	args["author_id"] = arg0
 	return args, nil
 }
 
@@ -1952,7 +1988,7 @@ func (ec *executionContext) _Mutation_addPost(ctx context.Context, field graphql
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddPost(rctx, args["postInput"].(model.PostInput))
+		return ec.resolvers.Mutation().AddPost(rctx, args["postInput"].(model.PostInput), args["author_id"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1994,7 +2030,7 @@ func (ec *executionContext) _Mutation_editPost(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().EditPost(rctx, args["post_id"].(int), args["postInput"].(model.PostInput))
+		return ec.resolvers.Mutation().EditPost(rctx, args["post_id"].(int), args["postInput"].(model.PostInput), args["author_id"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2036,7 +2072,7 @@ func (ec *executionContext) _Mutation_deletePost(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeletePost(rctx, args["post_id"].(int))
+		return ec.resolvers.Mutation().DeletePost(rctx, args["post_id"].(int), args["author_id"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2078,7 +2114,7 @@ func (ec *executionContext) _Mutation_restorePost(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RestorePost(rctx, args["post_id"].(int))
+		return ec.resolvers.Mutation().RestorePost(rctx, args["post_id"].(int), args["author_id"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3345,7 +3381,7 @@ func (ec *executionContext) _Query_getManyPosts(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetManyPosts(rctx, args["postSearch"].(model.PostSearch), args["user_id"].(int))
+		return ec.resolvers.Query().GetManyPosts(rctx, args["postSearch"].(model.PostSearch), args["author_id"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3503,7 +3539,7 @@ func (ec *executionContext) _Query_isAuthor(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().IsAuthor(rctx, args["user_id"].(int))
+		return ec.resolvers.Query().IsAuthor(rctx, args["author_id"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
