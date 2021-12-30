@@ -561,6 +561,17 @@ func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, e
 	return &formattedUser, nil
 }
 
+func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+	user, err := sql_models.Users(qm.Where("username = ?", username)).One(ctx, database.DB)
+
+	if user == nil {
+		return nil, err
+	}
+
+	formattedUser := utils.ConvertUser(user)
+	return &formattedUser, nil
+}
+
 func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch, authorID int) (*model.PaginatedPosts, error) {
 	// cap the maximum possible limit and return with one extra
 	// to check for remaining posts

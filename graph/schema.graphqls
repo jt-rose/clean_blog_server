@@ -123,6 +123,12 @@ type PaginatedComments {
 type Query {
   getPost(post_id: Int!): Post ## nullable for when no post found
   getUser(user_id: Int!): User ## nullable for when no user found
+  getUserByUsername(username: String!): User ## nullable for when no user found
+  ## usernames will be used for routing on the frontend
+  ## with getUserByUsername used as a starting point to get user_id and other info
+  ## via field resolvers
+  ## users can change their username, so user_id is preferred as an immutable identifier
+  ## but for more intuitive routing (blog/myusername vs blog/2), username will be preferred
   getManyPosts(postSearch: PostSearch!, author_id: Int!): PaginatedPosts!
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
