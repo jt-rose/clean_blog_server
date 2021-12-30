@@ -45,5 +45,3 @@ var COOKIE_NAME="cid"
 var UNAUTHENTICATED_ERROR_MESSAGE = "Must be logged in!"
 var ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE = "Only the author of the blog may add, edit, or delete posts"
 var ONLY_COMMENT_AUTHOR_MAY_EDIT = "Only the author of a comment can edit, delete, or restore it"
-// May refactor later to use a less "hard-coded" solution
-var AUTHOR_ID = 2
