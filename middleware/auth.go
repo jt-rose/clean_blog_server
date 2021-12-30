@@ -117,11 +117,11 @@ func GetUserIDFromSessions(ctx context.Context) (int, error) {
 	}
 }
 
-func ConfirmAuthor(ctx context.Context) (bool, int, error) {
+func ConfirmAuthor(ctx context.Context, authorID int) (bool, int, error) {
 	userID, err := GetUserIDFromSessions(ctx)
 	if err != nil {
 		return false, 0, err
 	}
-	isAuthor := userID == constants.AUTHOR_ID
+	isAuthor := userID == authorID
 	return isAuthor, userID, nil
 }

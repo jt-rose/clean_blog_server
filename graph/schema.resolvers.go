@@ -39,9 +39,9 @@ func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model
 	return &votes, err
 }
 
-func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput) (*model.Post, error) {
+func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput, authorID int) (*model.Post, error) {
 	// confirm user is the author of the blog
-	isAuthor, userID, err := middleware.ConfirmAuthor(ctx)
+	isAuthor, userID, err := middleware.ConfirmAuthor(ctx, authorID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,9 +68,9 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 	return &gql_post, nil
 }
 
-func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput model.PostInput) (*model.Post, error) {
+func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput model.PostInput, authorID int) (*model.Post, error) {
 	// confirm user is the author of the blog
-	isAuthor, _, err := middleware.ConfirmAuthor(ctx)
+	isAuthor, _, err := middleware.ConfirmAuthor(ctx, authorID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +99,9 @@ func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput m
 	return &gql_post, nil
 }
 
-func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, error) {
+func (r *mutationResolver) DeletePost(ctx context.Context, postID int, authorID int) (bool, error) {
 	// confirm user is the author of the blog
-	isAuthor, _, err := middleware.ConfirmAuthor(ctx)
+	isAuthor, _, err := middleware.ConfirmAuthor(ctx, authorID)
 	if err != nil {
 		return false, err
 	}
@@ -120,9 +120,9 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID int) (bool, er
 	return true, nil
 }
 
-func (r *mutationResolver) RestorePost(ctx context.Context, postID int) (bool, error) {
+func (r *mutationResolver) RestorePost(ctx context.Context, postID int, authorID int) (bool, error) {
 	// confirm user is the author of the blog
-	isAuthor, _, err := middleware.ConfirmAuthor(ctx)
+	isAuthor, _, err := middleware.ConfirmAuthor(ctx, authorID)
 	if err != nil {
 		return false, err
 	}
@@ -561,7 +561,7 @@ func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, e
 	return &formattedUser, nil
 }
 
-func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch, userID int) (*model.PaginatedPosts, error) {
+func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch, authorID int) (*model.PaginatedPosts, error) {
 	// cap the maximum possible limit and return with one extra
 	// to check for remaining posts
 	var limitPlusOne int
@@ -575,13 +575,13 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 	// get posts from DB with optional search by title
 	var posts sql_models.PostSlice
 	if postSearch.Title == nil {
-		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", userID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", authorID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
 		posts = retrievedPosts
 	} else {
-		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", userID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%"+*postSearch.Title+"%")).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", authorID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%"+*postSearch.Title+"%")).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
@@ -724,12 +724,12 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	return &formattedUser, nil
 }
 
-func (r *queryResolver) IsAuthor(ctx context.Context, userID int) (bool, error) {
+func (r *queryResolver) IsAuthor(ctx context.Context, authorID int) (bool, error) {
 	userID, err := middleware.GetUserIDFromSessions(ctx)
 	if err != nil {
 		return false, err
 	}
-	isAuthor := constants.AUTHOR_ID == userID
+	isAuthor := authorID == userID
 	return isAuthor, nil
 }
 
