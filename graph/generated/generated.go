@@ -122,7 +122,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		GetManyComments func(childComplexity int, commentSearch model.CommentSearch) int
-		GetManyPosts    func(childComplexity int, postSearch model.PostSearch) int
+		GetManyPosts    func(childComplexity int, postSearch model.PostSearch, userID int) int
 		GetManyUsers    func(childComplexity int, userSearch model.UserSearch) int
 		GetPost         func(childComplexity int, postID int) int
 		GetUser         func(childComplexity int, userID int) int
@@ -178,7 +178,7 @@ type PostResolver interface {
 type QueryResolver interface {
 	GetPost(ctx context.Context, postID int) (*model.Post, error)
 	GetUser(ctx context.Context, userID int) (*model.User, error)
-	GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error)
+	GetManyPosts(ctx context.Context, postSearch model.PostSearch, userID int) (*model.PaginatedPosts, error)
 	GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error)
 	GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error)
 	Me(ctx context.Context) (*model.User, error)
@@ -644,7 +644,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetManyPosts(childComplexity, args["postSearch"].(model.PostSearch)), true
+		return e.complexity.Query.GetManyPosts(childComplexity, args["postSearch"].(model.PostSearch), args["user_id"].(int)), true
 
 	case "Query.getManyUsers":
 		if e.complexity.Query.GetManyUsers == nil {
@@ -946,7 +946,7 @@ type PaginatedComments {
 type Query {
   getPost(post_id: Int!): Post ## nullable for when no post found
   getUser(user_id: Int!): User ## nullable for when no user found
-  getManyPosts(postSearch: PostSearch!): PaginatedPosts!
+  getManyPosts(postSearch: PostSearch!, user_id: Int!): PaginatedPosts!
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
   # authentication:
@@ -1333,6 +1333,15 @@ func (ec *executionContext) field_Query_getManyPosts_args(ctx context.Context, r
 		}
 	}
 	args["postSearch"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg1
 	return args, nil
 }
 
@@ -3336,7 +3345,7 @@ func (ec *executionContext) _Query_getManyPosts(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetManyPosts(rctx, args["postSearch"].(model.PostSearch))
+		return ec.resolvers.Query().GetManyPosts(rctx, args["postSearch"].(model.PostSearch), args["user_id"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

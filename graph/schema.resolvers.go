@@ -427,7 +427,7 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 func (r *mutationResolver) ForgotPassword(ctx context.Context, username string) (bool, error) {
 	// confirm username / email correspond to user in DB
 	user, err := sql_models.Users(qm.Where("username = ?", username), qm.Or("email = ?", username)).One(ctx, database.DB)
-	if err != nil  || user == nil {
+	if err != nil || user == nil {
 		return false, err
 	}
 
@@ -485,7 +485,7 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, u
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// locate user in database
 	user, err := sql_models.FindUser(ctx, database.DB, user_id_int)
 	if err != nil || user == nil {
@@ -498,7 +498,7 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, u
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// update user password
 	user.UserPassword = hashedPassword
 	_, err = user.Update(ctx, database.DB, boil.Infer())
@@ -561,7 +561,7 @@ func (r *queryResolver) GetUser(ctx context.Context, userID int) (*model.User, e
 	return &formattedUser, nil
 }
 
-func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch) (*model.PaginatedPosts, error) {
+func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch, userID int) (*model.PaginatedPosts, error) {
 	// cap the maximum possible limit and return with one extra
 	// to check for remaining posts
 	var limitPlusOne int
@@ -575,13 +575,13 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 	// get posts from DB with optional search by title
 	var posts sql_models.PostSlice
 	if postSearch.Title == nil {
-		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", userID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
 		posts = retrievedPosts
 	} else {
-		retrievedPosts, err := sql_models.Posts(qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%"+*postSearch.Title+"%")).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", userID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%"+*postSearch.Title+"%")).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
