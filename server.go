@@ -7,7 +7,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 
 	// gqlgen generated models
-
 	"github.com/jt-rose/clean_blog_server/dataloader"
 	"github.com/jt-rose/clean_blog_server/graph"
 	"github.com/jt-rose/clean_blog_server/graph/generated"
@@ -16,6 +15,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
+	cors "github.com/rs/cors/wrapper/gin"
 
 	// local imports
 	helmet "github.com/danielkov/gin-helmet"
@@ -54,6 +54,8 @@ func main() {
 	store, _ := redis.NewStore(10, "tcp", "localhost:6379", "", []byte(ENV.ENV_VARIABLES.SESSION_KEY))
 	
 	// set up middleware
+
+	r.Use(cors.Default())
 	r.Use(sessions.Sessions("session_id", store))
 	r.Use(middleware.GinContextToContextMiddleware())
 	r.Use(middleware.Authenticate())
