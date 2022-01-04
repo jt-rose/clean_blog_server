@@ -31,7 +31,7 @@ func graphqlHandler() gin.HandlerFunc {
 	//h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 	// initialize GraphQL server
 srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
-	
+	srv.AroundOperations(middleware.HandleLogs)
 // set up error and panic handling
 srv.SetErrorPresenter(middleware.HandleErrors)
 srv.SetRecoverFunc(middleware.HandlePanics)
