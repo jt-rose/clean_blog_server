@@ -56,11 +56,12 @@ func main() {
 
 	// setting up Gin
 	r := gin.Default()
+	r.SetTrustedProxies([]string{"192.168.1.2"})
 
 	// set up redis access
 	store, _ := redis.NewStore(10, "tcp", "localhost:6379", "", []byte(ENV.ENV_VARIABLES.SESSION_KEY))
 	rateLimiter, _ := middleware.InitRateLimiter()
-	
+
 	// set up middleware
 	r.Use(cors.Default())
 	r.Use(sessions.Sessions("session_id", store))
