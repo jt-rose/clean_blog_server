@@ -26,18 +26,15 @@ import (
 
 // Defining the Graphql handler
 func graphqlHandler() gin.HandlerFunc {
-	// NewExecutableSchema and Config are in the generated.go file
-	// Resolver is in the resolver.go file
-	//h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 	// initialize GraphQL server
-srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 	srv.AroundOperations(middleware.HandleLogs)
-// set up error and panic handling
-srv.SetErrorPresenter(middleware.HandleErrors)
-srv.SetRecoverFunc(middleware.HandlePanics)
+	// set up error and panic handling
+	srv.SetErrorPresenter(middleware.HandleErrors)
+	srv.SetRecoverFunc(middleware.HandlePanics)
 
-// limit query complexity to depth of 20
-srv.Use(extension.FixedComplexityLimit(20))
+	// limit query complexity to depth of 20
+	srv.Use(extension.FixedComplexityLimit(20))
 	return func(c *gin.Context) {
 		srv.ServeHTTP(c.Writer, c.Request)
 	}
@@ -57,27 +54,25 @@ func main() {
 	DB := database.DB
 	defer DB.Close()
 
-	// Setting up Gin
+	// setting up Gin
 	r := gin.Default()
-	
+
+	// set up redis access
 	store, _ := redis.NewStore(10, "tcp", "localhost:6379", "", []byte(ENV.ENV_VARIABLES.SESSION_KEY))
+	rateLimiter, _ := middleware.InitRateLimiter()
 	
 	// set up middleware
-
 	r.Use(cors.Default())
 	r.Use(sessions.Sessions("session_id", store))
 	r.Use(middleware.GinContextToContextMiddleware())
 	r.Use(middleware.Authenticate())
 	r.Use(dataloader.UseDataLoaders())
 	r.Use(helmet.Default())
-	
-
+	r.Use(rateLimiter)
 
 	// set up routes
 	r.POST("/query", graphqlHandler())
 	r.GET("/", playgroundHandler())
-
-	
 
 	// run on default available ports
 	r.Run()
