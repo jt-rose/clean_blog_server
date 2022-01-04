@@ -28,10 +28,18 @@ import (
 func graphqlHandler() gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
-	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	//h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	// initialize GraphQL server
+srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	
+// set up error and panic handling
+srv.SetErrorPresenter(middleware.HandleErrors)
+srv.SetRecoverFunc(middleware.HandlePanics)
 
+// limit query complexity to depth of 20
+srv.Use(extension.FixedComplexityLimit(20))
 	return func(c *gin.Context) {
-		h.ServeHTTP(c.Writer, c.Request)
+		srv.ServeHTTP(c.Writer, c.Request)
 	}
 }
 
@@ -51,6 +59,7 @@ func main() {
 
 	// Setting up Gin
 	r := gin.Default()
+	
 	store, _ := redis.NewStore(10, "tcp", "localhost:6379", "", []byte(ENV.ENV_VARIABLES.SESSION_KEY))
 	
 	// set up middleware
@@ -62,19 +71,13 @@ func main() {
 	r.Use(dataloader.UseDataLoaders())
 	r.Use(helmet.Default())
 	
+
+
 	// set up routes
 	r.POST("/query", graphqlHandler())
 	r.GET("/", playgroundHandler())
 
-	// initialize GraphQL server
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 	
-	// set up error and panic handling
-	srv.SetErrorPresenter(middleware.HandleErrors)
-	srv.SetRecoverFunc(middleware.HandlePanics)
-	
-	// limit query complexity to depth of 20
-	srv.Use(extension.FixedComplexityLimit(20))
 
 	// run on default available ports
 	r.Run()

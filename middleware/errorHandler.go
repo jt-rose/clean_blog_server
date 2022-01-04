@@ -22,7 +22,8 @@ func storeErrorLog(ctx context.Context, err error) error {
 	n := runtime.Callers(2, pc)
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
-	fmt.Printf("Error Found: %s:%d %s\n", frame.File, frame.Line, frame.Function)
+	fmt.Println("Error Encountered: ", err.Error())
+	fmt.Printf("Error Found at: %s:%d %s\n", frame.File, frame.Line, frame.Function)
 
 	// add data on point of failure to error log
 	errorLog := sql_models.ErrorLog{
@@ -37,15 +38,12 @@ func storeErrorLog(ctx context.Context, err error) error {
 func HandleErrors(ctx context.Context, e error) *gqlerror.Error {
 	err := graphql.DefaultErrorPresenter(ctx, e)
 
-	//var myErr *MyError
-	if errors.Is(e, errors.New("sql: no rows in result set")) {
+	if err.Message == "sql: no rows in result set" {
 		err.Message = "No matching data found in database"
-	} else if errors.Is(e, errors.New(constants.UNAUTHENTICATED_ERROR_MESSAGE)) {
-		err.Message = constants.UNAUTHENTICATED_ERROR_MESSAGE
-	} else {
+	} else if err.Message != constants.UNAUTHENTICATED_ERROR_MESSAGE {
 		storeErrorLog(ctx, err)
 		// provide generic response to hide error details from the client
-		err.Message = "data unavailable"
+		err.Message = "data currently unavailable"
 
 	}
 	// return newly formatted error
@@ -72,5 +70,4 @@ func HandlePanics(ctx context.Context, err interface{}) error {
 	storeErrorLog(ctx, foundError)
 
 	return genericError
-
 }
