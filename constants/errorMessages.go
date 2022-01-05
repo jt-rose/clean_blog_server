@@ -11,9 +11,10 @@ var USERNAME_TOO_SHORT_ERROR_MESSAGE = "Username must be at least 3 characters l
 var USERNAME_INAPPROPRIATE_ERROR_MESSAGE = "Must use an appropriate username"
 var INVALID_EMAIL_ERROR_MESSAGE = "Must use a valid email address"
 
-// store custom errors in array
-// which will be used by the errorHandler
-func createErrMsgArray() []string {
+// confirm if error has custom error message
+// which can be shared directly with the client
+func IsCustomError(errMessage string) bool {
+	// store custom errors in array
 	errorMessages := [...]string{
 		UNAUTHENTICATED_ERROR_MESSAGE,
 		ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE,
@@ -26,7 +27,13 @@ func createErrMsgArray() []string {
 		INVALID_EMAIL_ERROR_MESSAGE,
 	}
 
-	return errorMessages[:]
-}
+	// loop through to find match
+	for _, value := range errorMessages {
+		if errMessage == value {
+			return true
+		}
+	}
 
-var ErrorMessages = createErrMsgArray()
+	// return false if no match found
+	return false
+}
