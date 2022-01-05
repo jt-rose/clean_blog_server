@@ -22,6 +22,7 @@ require (
 )
 
 require (
+	github.com/TwiN/go-away v1.6.0 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
