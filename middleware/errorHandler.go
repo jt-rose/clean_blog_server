@@ -38,15 +38,18 @@ func storeErrorLog(ctx context.Context, err error) error {
 func HandleErrors(ctx context.Context, e error) *gqlerror.Error {
 	err := graphql.DefaultErrorPresenter(ctx, e)
 
+	// if data not found, return user-friendly error message
 	if err.Message == "sql: no rows in result set" {
 		err.Message = "No matching data found in database"
-	} else if err.Message != constants.UNAUTHENTICATED_ERROR_MESSAGE {
+		// if custom error not found, store the issue in the error log
+		// and hide the details of the error from the client
+	} else if !constants.IsCustomError(err.Message) {
 		storeErrorLog(ctx, err)
 		// provide generic response to hide error details from the client
 		err.Message = "data currently unavailable"
 
 	}
-	// return newly formatted error
+	// return newly formatted error or custom error
 	return err
 }
 
