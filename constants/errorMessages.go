@@ -10,6 +10,7 @@ var PASSWORD_LACKS_UPPER_AND_LOWERCASE_LETTERS_ERROR_MESSAGE = "Password must ha
 var USERNAME_TOO_SHORT_ERROR_MESSAGE = "Username must be at least 3 characters long"
 var USERNAME_INAPPROPRIATE_ERROR_MESSAGE = "Must use an appropriate username"
 var INVALID_EMAIL_ERROR_MESSAGE = "Must use a valid email address"
+var INVALID_USERNAME_PASSWORD_ERROR_MESSAGE = "Incorrect username / password combination!"
 
 // confirm if error has custom error message
 // which can be shared directly with the client
@@ -25,6 +26,7 @@ func IsCustomError(errMessage string) bool {
 		USERNAME_TOO_SHORT_ERROR_MESSAGE,
 		USERNAME_INAPPROPRIATE_ERROR_MESSAGE,
 		INVALID_EMAIL_ERROR_MESSAGE,
+		INVALID_USERNAME_PASSWORD_ERROR_MESSAGE,
 	}
 
 	// loop through to find match

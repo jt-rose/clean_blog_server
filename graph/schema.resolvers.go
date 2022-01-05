@@ -341,17 +341,33 @@ func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, vot
 }
 
 func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error) {
+	// validate user inputs
+	err := utils.ValidateEmail(userInput.Email)
+	if err != nil {
+		return nil, err
+	}
+	err = utils.ValidateUsername(userInput.Username)
+	if err != nil {
+		return nil, err
+	}
+	err = utils.ValidatePassword(userInput.Password)
+	if err != nil {
+		return nil, err
+	}
+	
+	// get session
 	_, session, err := middleware.GetGinContextAndSessions(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	// hash password
 	hashedPassword, err := utils.HashPassword(userInput.Password)
-
 	if err != nil {
 		return nil, err
 	}
 
+	// insert new user
 	newUser := sql_models.User{
 		Username:     userInput.Username,
 		Email:        userInput.Email,
@@ -392,7 +408,7 @@ func (r *mutationResolver) Login(ctx context.Context, username string, password 
 	// compare password with hashed password
 	correctPassword := utils.CheckPasswordHash(password, user.UserPassword)
 	if !correctPassword {
-		return nil, errors.New("Incorrect username / password combination!")
+		return nil, errors.New(constants.INVALID_USERNAME_PASSWORD_ERROR_MESSAGE)
 	}
 
 	// access and save session
@@ -476,6 +492,11 @@ func (r *mutationResolver) AccessPasswordReset(ctx context.Context, resetKey str
 func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, userID int, newPassword string) (*model.User, error) {
 	// confirm reset key is active in redis
 	user_id, err := database.RedisClient.Get(ctx, resetKey).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	err = utils.ValidatePassword(newPassword)
 	if err != nil {
 		return nil, err
 	}
