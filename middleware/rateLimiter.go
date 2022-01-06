@@ -12,8 +12,8 @@ import (
 
 func InitRateLimiter() (gin.HandlerFunc, error) {
 
-	// set a limit rate of 20 requests per minute
-	rate, err := limiter.NewRateFromFormatted("20-M")
+	// set a limit rate of 200 requests per minute
+	rate, err := limiter.NewRateFromFormatted("200-M")
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
