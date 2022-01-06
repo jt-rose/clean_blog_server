@@ -33,8 +33,8 @@ func graphqlHandler() gin.HandlerFunc {
 	srv.SetErrorPresenter(middleware.HandleErrors)
 	srv.SetRecoverFunc(middleware.HandlePanics)
 
-	// limit query complexity to depth of 20
-	srv.Use(extension.FixedComplexityLimit(20))
+	// limit query complexity to depth of 300
+	srv.Use(extension.FixedComplexityLimit(300))
 	return func(c *gin.Context) {
 		srv.ServeHTTP(c.Writer, c.Request)
 	}
