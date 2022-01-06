@@ -354,7 +354,7 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// get session
 	_, session, err := middleware.GetGinContextAndSessions(ctx)
 	if err != nil {

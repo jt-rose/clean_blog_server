@@ -843,8 +843,8 @@ type User {
   username: String!
   email: String!
   ## password - not shared via graphql
-  posts: PaginatedPosts ## field resolver
-  comments: PaginatedComments ## field resolver
+  posts: PaginatedPosts! ## field resolver
+  comments: PaginatedComments! ## field resolver
   created_at: Time!
 }
 
@@ -893,7 +893,7 @@ type Post {
   subtitle: String! ## optional
   post_text: String! ## will store a JSON-serialized version of the HTML markup
   created_at: Time!
-  comments: PaginatedComments ## field resolver for top-level comments
+  comments: PaginatedComments! ## field resolver for top-level comments
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted posts will still be stored in the database
   ## to allow for undoing a delete and restoring posts / comments / votes
@@ -931,7 +931,7 @@ type Comment {
   user: User! ## field resolver
   comment_text: String!
   created_at: Time!
-  comments: PaginatedComments ## field resolver for subcomments
+  comments: PaginatedComments! ## field resolver for subcomments
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted comments will still be stored in the database
   ## to allow for undoing a delete and restoring comments / votes
@@ -1781,11 +1781,14 @@ func (ec *executionContext) _Comment_comments(ctx context.Context, field graphql
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.PaginatedComments)
 	fc.Result = res
-	return ec.marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
+	return ec.marshalNPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Comment_votes(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
@@ -3131,11 +3134,14 @@ func (ec *executionContext) _Post_comments(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.PaginatedComments)
 	fc.Result = res
-	return ec.marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
+	return ec.marshalNPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Post_votes(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
@@ -3831,11 +3837,14 @@ func (ec *executionContext) _User_posts(ctx context.Context, field graphql.Colle
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.PaginatedPosts)
 	fc.Result = res
-	return ec.marshalOPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx, field.Selections, res)
+	return ec.marshalNPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_comments(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -3863,11 +3872,14 @@ func (ec *executionContext) _User_comments(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.PaginatedComments)
 	fc.Result = res
-	return ec.marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
+	return ec.marshalNPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -5369,6 +5381,9 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Comment_comments(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "votes":
@@ -5697,6 +5712,9 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Post_comments(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "votes":
@@ -5931,6 +5949,9 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_posts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "comments":
@@ -5942,6 +5963,9 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_comments(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "created_at":
@@ -6815,20 +6839,6 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	return graphql.MarshalInt(*v)
-}
-
-func (ec *executionContext) marshalOPaginatedComments2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedComments(ctx context.Context, sel ast.SelectionSet, v *model.PaginatedComments) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._PaginatedComments(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx context.Context, sel ast.SelectionSet, v *model.PaginatedPosts) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._PaginatedPosts(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOPost2ᚕᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v []*model.Post) graphql.Marshaler {
