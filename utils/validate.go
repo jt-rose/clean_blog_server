@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"net/url"
 	"regexp"
 
 	"github.com/jt-rose/clean_blog_server/constants"
@@ -24,6 +25,10 @@ func ValidateUsername(username string) error {
 	}
 	if goaway.IsProfane(username) {
 		return errors.New(constants.USERNAME_INAPPROPRIATE_ERROR_MESSAGE)
+	}
+	// the username will be used in a url and should be compatible with a url query
+	if url.QueryEscape(username) != username {
+		return errors.New(constants.USERNAME_NOT_URL_COMPATIBLE_ERROR_MESSAGE)
 	}
 	return nil
 }

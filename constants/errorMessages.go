@@ -9,6 +9,7 @@ var PASSWORD_LACKS_MIX_OF_CHARS_ERROR_MESSAGE = "Password must have letters, num
 var PASSWORD_LACKS_UPPER_AND_LOWERCASE_LETTERS_ERROR_MESSAGE = "Password must have both lower and uppercase characters"
 var USERNAME_TOO_SHORT_ERROR_MESSAGE = "Username must be at least 3 characters long"
 var USERNAME_INAPPROPRIATE_ERROR_MESSAGE = "Must use an appropriate username"
+var USERNAME_NOT_URL_COMPATIBLE_ERROR_MESSAGE = "Please use only letters, numbers, and hyphens for your username"
 var INVALID_EMAIL_ERROR_MESSAGE = "Must use a valid email address"
 var INVALID_USERNAME_PASSWORD_ERROR_MESSAGE = "Incorrect username / password combination!"
 
@@ -25,6 +26,7 @@ func IsCustomError(errMessage string) bool {
 		PASSWORD_LACKS_UPPER_AND_LOWERCASE_LETTERS_ERROR_MESSAGE,
 		USERNAME_TOO_SHORT_ERROR_MESSAGE,
 		USERNAME_INAPPROPRIATE_ERROR_MESSAGE,
+		USERNAME_NOT_URL_COMPATIBLE_ERROR_MESSAGE,
 		INVALID_EMAIL_ERROR_MESSAGE,
 		INVALID_USERNAME_PASSWORD_ERROR_MESSAGE,
 	}
