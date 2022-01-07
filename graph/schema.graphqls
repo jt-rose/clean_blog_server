@@ -129,6 +129,7 @@ type Query {
   ## via field resolvers
   ## users can change their username, so user_id is preferred as an immutable identifier
   ## but for more intuitive routing (blog/myusername vs blog/2), username will be preferred
+  getPostByUsernameAndTitle(username: String!, title: String!): Post
   getManyPosts(postSearch: PostSearch!, author_id: Int!): PaginatedPosts!
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver

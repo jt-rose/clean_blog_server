@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -591,6 +592,28 @@ func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) 
 
 	formattedUser := utils.ConvertUser(user)
 	return &formattedUser, nil
+}
+
+func (r *queryResolver) GetPostByUsernameAndTitle(ctx context.Context, username string, title string) (*model.Post, error) {
+	// the title variable will pull a url-encoded slug, which will need to be unencoded before searching the database
+	unencodedTitle, err := url.QueryUnescape(title)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := sql_models.Users(qm.Where("username = ?", username)).One(ctx, database.DB)
+	if err != nil {
+		return nil, err
+	}
+
+	post, err := user.Posts(qm.Where("title = ?", unencodedTitle)).One(ctx, database.DB)
+	if err != nil {
+		return nil, err
+	}
+
+
+	fmtPost := utils.ConvertPost(post)
+	return &fmtPost, err
 }
 
 func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostSearch, authorID int) (*model.PaginatedPosts, error) {

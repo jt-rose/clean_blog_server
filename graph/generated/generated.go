@@ -121,14 +121,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetManyComments   func(childComplexity int, commentSearch model.CommentSearch) int
-		GetManyPosts      func(childComplexity int, postSearch model.PostSearch, authorID int) int
-		GetManyUsers      func(childComplexity int, userSearch model.UserSearch) int
-		GetPost           func(childComplexity int, postID int) int
-		GetUser           func(childComplexity int, userID int) int
-		GetUserByUsername func(childComplexity int, username string) int
-		IsAuthor          func(childComplexity int, authorID int) int
-		Me                func(childComplexity int) int
+		GetManyComments           func(childComplexity int, commentSearch model.CommentSearch) int
+		GetManyPosts              func(childComplexity int, postSearch model.PostSearch, authorID int) int
+		GetManyUsers              func(childComplexity int, userSearch model.UserSearch) int
+		GetPost                   func(childComplexity int, postID int) int
+		GetPostByUsernameAndTitle func(childComplexity int, username string, title string) int
+		GetUser                   func(childComplexity int, userID int) int
+		GetUserByUsername         func(childComplexity int, username string) int
+		IsAuthor                  func(childComplexity int, authorID int) int
+		Me                        func(childComplexity int) int
 	}
 
 	User struct {
@@ -180,6 +181,7 @@ type QueryResolver interface {
 	GetPost(ctx context.Context, postID int) (*model.Post, error)
 	GetUser(ctx context.Context, userID int) (*model.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
+	GetPostByUsernameAndTitle(ctx context.Context, username string, title string) (*model.Post, error)
 	GetManyPosts(ctx context.Context, postSearch model.PostSearch, authorID int) (*model.PaginatedPosts, error)
 	GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error)
 	GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error)
@@ -672,6 +674,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetPost(childComplexity, args["post_id"].(int)), true
 
+	case "Query.getPostByUsernameAndTitle":
+		if e.complexity.Query.GetPostByUsernameAndTitle == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getPostByUsernameAndTitle_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetPostByUsernameAndTitle(childComplexity, args["username"].(string), args["title"].(string)), true
+
 	case "Query.getUser":
 		if e.complexity.Query.GetUser == nil {
 			break
@@ -966,6 +980,7 @@ type Query {
   ## via field resolvers
   ## users can change their username, so user_id is preferred as an immutable identifier
   ## but for more intuitive routing (blog/myusername vs blog/2), username will be preferred
+  getPostByUsernameAndTitle(username: String!, title: String!): Post
   getManyPosts(postSearch: PostSearch!, author_id: Int!): PaginatedPosts!
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
@@ -1413,6 +1428,30 @@ func (ec *executionContext) field_Query_getManyUsers_args(ctx context.Context, r
 		}
 	}
 	args["userSearch"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getPostByUsernameAndTitle_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["username"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["username"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["title"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["title"] = arg1
 	return args, nil
 }
 
@@ -3434,6 +3473,45 @@ func (ec *executionContext) _Query_getUserByUsername(ctx context.Context, field 
 	res := resTmp.(*model.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getPostByUsernameAndTitle(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getPostByUsernameAndTitle_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetPostByUsernameAndTitle(rctx, args["username"].(string), args["title"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Post)
+	fc.Result = res
+	return ec.marshalOPost2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_getManyPosts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5830,6 +5908,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getUserByUsername(ctx, field)
+				return res
+			})
+		case "getPostByUsernameAndTitle":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getPostByUsernameAndTitle(ctx, field)
 				return res
 			})
 		case "getManyPosts":
