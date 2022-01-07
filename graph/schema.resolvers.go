@@ -551,6 +551,11 @@ func (r *postResolver) User(ctx context.Context, obj *model.Post) (*model.User, 
 	return &user, err
 }
 
+func (r *postResolver) URLEncodedTitle(ctx context.Context, obj *model.Post) (string, error) {
+	encodedTitle := url.QueryEscape(obj.Title)
+	return encodedTitle, nil
+}
+
 func (r *postResolver) Comments(ctx context.Context, obj *model.Post) (*model.PaginatedComments, error) {
 	paginatedComments, err := dataloader.For(ctx).CommentByPostID.Load(obj.PostID)
 	return &paginatedComments, err
@@ -610,7 +615,6 @@ func (r *queryResolver) GetPostByUsernameAndTitle(ctx context.Context, username 
 	if err != nil {
 		return nil, err
 	}
-
 
 	fmtPost := utils.ConvertPost(post)
 	return &fmtPost, err

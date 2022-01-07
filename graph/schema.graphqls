@@ -53,6 +53,7 @@ type Post {
   user_id: Int!
   user: User # field resolver
   title: String!
+  urlEncodedTitle: String! # field resolver
   subtitle: String! ## optional
   post_text: String! ## will store a JSON-serialized version of the HTML markup
   created_at: Time!

@@ -102,16 +102,17 @@ type ComplexityRoot struct {
 	}
 
 	Post struct {
-		Comments  func(childComplexity int) int
-		CreatedAt func(childComplexity int) int
-		Deleted   func(childComplexity int) int
-		PostID    func(childComplexity int) int
-		PostText  func(childComplexity int) int
-		Subtitle  func(childComplexity int) int
-		Title     func(childComplexity int) int
-		User      func(childComplexity int) int
-		UserID    func(childComplexity int) int
-		Votes     func(childComplexity int) int
+		Comments        func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		Deleted         func(childComplexity int) int
+		PostID          func(childComplexity int) int
+		PostText        func(childComplexity int) int
+		Subtitle        func(childComplexity int) int
+		Title           func(childComplexity int) int
+		URLEncodedTitle func(childComplexity int) int
+		User            func(childComplexity int) int
+		UserID          func(childComplexity int) int
+		Votes           func(childComplexity int) int
 	}
 
 	PostVote struct {
@@ -173,6 +174,8 @@ type MutationResolver interface {
 }
 type PostResolver interface {
 	User(ctx context.Context, obj *model.Post) (*model.User, error)
+
+	URLEncodedTitle(ctx context.Context, obj *model.Post) (string, error)
 
 	Comments(ctx context.Context, obj *model.Post) (*model.PaginatedComments, error)
 	Votes(ctx context.Context, obj *model.Post) (*model.Votes, error)
@@ -584,6 +587,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Post.Title(childComplexity), true
 
+	case "Post.urlEncodedTitle":
+		if e.complexity.Post.URLEncodedTitle == nil {
+			break
+		}
+
+		return e.complexity.Post.URLEncodedTitle(childComplexity), true
+
 	case "Post.user":
 		if e.complexity.Post.User == nil {
 			break
@@ -904,6 +914,7 @@ type Post {
   user_id: Int!
   user: User # field resolver
   title: String!
+  urlEncodedTitle: String! # field resolver
   subtitle: String! ## optional
   post_text: String! ## will store a JSON-serialized version of the HTML markup
   created_at: Time!
@@ -3027,6 +3038,41 @@ func (ec *executionContext) _Post_title(ctx context.Context, field graphql.Colle
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Post_urlEncodedTitle(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Post().URLEncodedTitle(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5766,6 +5812,20 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "urlEncodedTitle":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Post_urlEncodedTitle(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "subtitle":
 			out.Values[i] = ec._Post_subtitle(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

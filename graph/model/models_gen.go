@@ -52,16 +52,17 @@ type PaginatedUsers struct {
 }
 
 type Post struct {
-	PostID    int                `json:"post_id"`
-	UserID    int                `json:"user_id"`
-	User      *User              `json:"user"`
-	Title     string             `json:"title"`
-	Subtitle  string             `json:"subtitle"`
-	PostText  string             `json:"post_text"`
-	CreatedAt time.Time          `json:"created_at"`
-	Comments  *PaginatedComments `json:"comments"`
-	Votes     *Votes             `json:"votes"`
-	Deleted   bool               `json:"deleted"`
+	PostID          int                `json:"post_id"`
+	UserID          int                `json:"user_id"`
+	User            *User              `json:"user"`
+	Title           string             `json:"title"`
+	URLEncodedTitle string             `json:"urlEncodedTitle"`
+	Subtitle        string             `json:"subtitle"`
+	PostText        string             `json:"post_text"`
+	CreatedAt       time.Time          `json:"created_at"`
+	Comments        *PaginatedComments `json:"comments"`
+	Votes           *Votes             `json:"votes"`
+	Deleted         bool               `json:"deleted"`
 }
 
 type PostInput struct {

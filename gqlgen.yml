@@ -68,6 +68,8 @@ models:
         resolver: true
       votes:
         resolver: true
+      urlEncodedTitle:
+        resolver: true
   Comment:
     fields:
       user:
