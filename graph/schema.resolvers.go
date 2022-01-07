@@ -51,12 +51,16 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 		return nil, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
 	}
 
+	
 	// attenpt to add new post
 	newPost := sql_models.Post{
 		UserID:   userID,
 		Title:    postInput.Title,
-		Subtitle: *postInput.Subtitle,
 		PostText: postInput.Text,
+	}
+
+	if postInput.Subtitle != nil {
+		newPost.Subtitle = *postInput.Subtitle
 	}
 
 	err = newPost.Insert(ctx, database.DB, boil.Infer())
