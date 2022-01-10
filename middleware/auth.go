@@ -2,11 +2,8 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
-
-	constants "github.com/jt-rose/clean_blog_server/constants"
 
 	sessions "github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -107,11 +104,11 @@ func GetUserIDFromSessions(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	// Retrieve our User id and type-assert it
-	// return error if no userID int found
+	// return 0 if no userID int found
 	val := session.Get("user")
 	userID, ok := val.(int)
 	if !ok {
-		return 0, errors.New(constants.UNAUTHENTICATED_ERROR_MESSAGE)
+		return 0, nil
 	} else {
 		return userID, nil
 	}
