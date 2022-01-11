@@ -28,6 +28,7 @@ type User struct {
 	Email        string    `boil:"email" json:"email" toml:"email" yaml:"email"`
 	UserPassword string    `boil:"user_password" json:"user_password" toml:"user_password" yaml:"user_password"`
 	CreatedAt    time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	Active       bool      `boil:"active" json:"active" toml:"active" yaml:"active"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -39,12 +40,14 @@ var UserColumns = struct {
 	Email        string
 	UserPassword string
 	CreatedAt    string
+	Active       string
 }{
 	UserID:       "user_id",
 	Username:     "username",
 	Email:        "email",
 	UserPassword: "user_password",
 	CreatedAt:    "created_at",
+	Active:       "active",
 }
 
 var UserTableColumns = struct {
@@ -53,12 +56,14 @@ var UserTableColumns = struct {
 	Email        string
 	UserPassword string
 	CreatedAt    string
+	Active       string
 }{
 	UserID:       "users.user_id",
 	Username:     "users.username",
 	Email:        "users.email",
 	UserPassword: "users.user_password",
 	CreatedAt:    "users.created_at",
+	Active:       "users.active",
 }
 
 // Generated where
@@ -69,12 +74,14 @@ var UserWhere = struct {
 	Email        whereHelperstring
 	UserPassword whereHelperstring
 	CreatedAt    whereHelpertime_Time
+	Active       whereHelperbool
 }{
 	UserID:       whereHelperint{field: "\"users\".\"user_id\""},
 	Username:     whereHelperstring{field: "\"users\".\"username\""},
 	Email:        whereHelperstring{field: "\"users\".\"email\""},
 	UserPassword: whereHelperstring{field: "\"users\".\"user_password\""},
 	CreatedAt:    whereHelpertime_Time{field: "\"users\".\"created_at\""},
+	Active:       whereHelperbool{field: "\"users\".\"active\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -107,9 +114,9 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"user_id", "username", "email", "user_password", "created_at"}
+	userAllColumns            = []string{"user_id", "username", "email", "user_password", "created_at", "active"}
 	userColumnsWithoutDefault = []string{"username", "email", "user_password", "created_at"}
-	userColumnsWithDefault    = []string{"user_id"}
+	userColumnsWithDefault    = []string{"user_id", "active"}
 	userPrimaryKeyColumns     = []string{"user_id"}
 )
 

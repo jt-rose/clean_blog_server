@@ -29,6 +29,7 @@ type Post struct {
 	Subtitle  string    `boil:"subtitle" json:"subtitle" toml:"subtitle" yaml:"subtitle"`
 	PostText  string    `boil:"post_text" json:"post_text" toml:"post_text" yaml:"post_text"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	Published bool      `boil:"published" json:"published" toml:"published" yaml:"published"`
 
 	R *postR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L postL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -41,6 +42,7 @@ var PostColumns = struct {
 	Subtitle  string
 	PostText  string
 	CreatedAt string
+	Published string
 }{
 	PostID:    "post_id",
 	UserID:    "user_id",
@@ -48,6 +50,7 @@ var PostColumns = struct {
 	Subtitle:  "subtitle",
 	PostText:  "post_text",
 	CreatedAt: "created_at",
+	Published: "published",
 }
 
 var PostTableColumns = struct {
@@ -57,6 +60,7 @@ var PostTableColumns = struct {
 	Subtitle  string
 	PostText  string
 	CreatedAt string
+	Published string
 }{
 	PostID:    "posts.post_id",
 	UserID:    "posts.user_id",
@@ -64,9 +68,19 @@ var PostTableColumns = struct {
 	Subtitle:  "posts.subtitle",
 	PostText:  "posts.post_text",
 	CreatedAt: "posts.created_at",
+	Published: "posts.published",
 }
 
 // Generated where
+
+type whereHelperbool struct{ field string }
+
+func (w whereHelperbool) EQ(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperbool) NEQ(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperbool) LT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperbool) LTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
 
 var PostWhere = struct {
 	PostID    whereHelperint
@@ -75,6 +89,7 @@ var PostWhere = struct {
 	Subtitle  whereHelperstring
 	PostText  whereHelperstring
 	CreatedAt whereHelpertime_Time
+	Published whereHelperbool
 }{
 	PostID:    whereHelperint{field: "\"posts\".\"post_id\""},
 	UserID:    whereHelperint{field: "\"posts\".\"user_id\""},
@@ -82,6 +97,7 @@ var PostWhere = struct {
 	Subtitle:  whereHelperstring{field: "\"posts\".\"subtitle\""},
 	PostText:  whereHelperstring{field: "\"posts\".\"post_text\""},
 	CreatedAt: whereHelpertime_Time{field: "\"posts\".\"created_at\""},
+	Published: whereHelperbool{field: "\"posts\".\"published\""},
 }
 
 // PostRels is where relationship names are stored.
@@ -111,9 +127,9 @@ func (*postR) NewStruct() *postR {
 type postL struct{}
 
 var (
-	postAllColumns            = []string{"post_id", "user_id", "title", "subtitle", "post_text", "created_at"}
+	postAllColumns            = []string{"post_id", "user_id", "title", "subtitle", "post_text", "created_at", "published"}
 	postColumnsWithoutDefault = []string{"user_id", "title", "subtitle", "post_text", "created_at"}
-	postColumnsWithDefault    = []string{"post_id"}
+	postColumnsWithDefault    = []string{"post_id", "published"}
 	postPrimaryKeyColumns     = []string{"post_id"}
 )
 

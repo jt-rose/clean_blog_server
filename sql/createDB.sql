@@ -5,7 +5,8 @@ CREATE TABLE users (
   username VARCHAR(255) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   user_password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL
+  created_at TIMESTAMPTZ NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE posts (
@@ -14,7 +15,8 @@ CREATE TABLE posts (
   title VARCHAR(255) UNIQUE NOT NULL,
   subtitle VARCHAR(255), NOT NULL,
   post_text TEXT NOT NULL, -- may change to JSONB based on react editor
-  created_at TIMESTAMPTZ NOT NULL
+  created_at TIMESTAMPTZ NOT NULL,
+  published BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE comments (

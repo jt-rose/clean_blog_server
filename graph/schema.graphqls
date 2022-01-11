@@ -9,6 +9,7 @@ type User {
   posts: PaginatedPosts! ## field resolver
   comments: PaginatedComments! ## field resolver
   created_at: Time!
+  active: Boolean!
 }
 
 input UserSearch {
@@ -61,6 +62,7 @@ type Post {
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted posts will still be stored in the database
   ## to allow for undoing a delete and restoring posts / comments / votes
+  published: Boolean!
 }
 
 input PostInput {
