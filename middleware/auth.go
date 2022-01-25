@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
 	sessions "github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/jt-rose/clean_blog_server/constants"
 )
 
 // A private key for context that only this package can access. This is important
@@ -121,4 +123,17 @@ func ConfirmAuthor(ctx context.Context, authorID int) (bool, int, error) {
 	}
 	isAuthor := userID == authorID
 	return isAuthor, userID, nil
+}
+
+func RejectIfNotAuthor(ctx context.Context, userID int) (error) {
+	isAuthor, userID, err := ConfirmAuthor(ctx, userID)
+		if err != nil {
+			return err
+		}
+
+		if !isAuthor {
+			return errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
+		}
+
+		return nil
 }
