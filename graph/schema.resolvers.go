@@ -25,6 +25,10 @@ import (
 	qm "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
+/* -------------------------------------------------------------------------- */
+/*                         dataloader field resolvers                         */
+/* -------------------------------------------------------------------------- */
+
 func (r *commentResolver) User(ctx context.Context, obj *model.Comment) (*model.User, error) {
 	user, err := dataloader.For(ctx).UserById.Load(obj.UserID)
 	return &user, err
@@ -39,6 +43,10 @@ func (r *commentResolver) Votes(ctx context.Context, obj *model.Comment) (*model
 	votes, err := dataloader.For(ctx).VotesByCommentID.Load(obj.CommentID)
 	return &votes, err
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                  Post CRUD                                 */
+/* -------------------------------------------------------------------------- */
 
 func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInput, authorID int) (*model.Post, error) {
 	// confirm user is the author of the blog
@@ -146,6 +154,10 @@ func (r *mutationResolver) RestorePost(ctx context.Context, postID int, authorID
 
 	return true, nil
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                comment CRUD                                */
+/* -------------------------------------------------------------------------- */
 
 func (r *mutationResolver) AddComment(ctx context.Context, postID int, responseToCommentID *int, commentText string) (*model.Comment, error) {
 	// confirm authenticated
@@ -268,6 +280,10 @@ func (r *mutationResolver) RestoreComment(ctx context.Context, commentID int) (b
 	return true, nil
 }
 
+/* -------------------------------------------------------------------------- */
+/*                             vote functionality                             */
+/* -------------------------------------------------------------------------- */
+
 func (r *mutationResolver) VoteOnPost(ctx context.Context, postID int, voteValue model.VoteValue) (*model.PostVote, error) {
 	// authenticate user
 	userID, err := middleware.GetUserIDFromSessions(ctx)
@@ -345,6 +361,10 @@ func (r *mutationResolver) VoteOnComment(ctx context.Context, commentID int, vot
 	gql_commentVote := utils.ConvertCommentVote(currentCommentVote)
 	return &gql_commentVote, nil
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                manage users                                */
+/* -------------------------------------------------------------------------- */
 
 func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error) {
 	// validate user inputs
@@ -575,6 +595,10 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, resetKey string, u
 	return &fmtUser, nil
 }
 
+/* -------------------------------------------------------------------------- */
+/*                       more dataloader field resolvers                      */
+/* -------------------------------------------------------------------------- */
+
 func (r *postResolver) User(ctx context.Context, obj *model.Post) (*model.User, error) {
 	user, err := dataloader.For(ctx).UserById.Load(obj.UserID)
 	return &user, err
@@ -595,6 +619,11 @@ func (r *postResolver) Votes(ctx context.Context, obj *model.Post) (*model.Votes
 	return &votes, err
 }
 
+/* -------------------------------------------------------------------------- */
+/*                                  get posts                                 */
+/* -------------------------------------------------------------------------- */
+
+// get single post
 func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, error) {
 	post, err := sql_models.Posts(qm.Where("post_id = ?", postID)).One(ctx, database.DB)
 
@@ -637,6 +666,7 @@ func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) 
 	return &formattedUser, nil
 }
 
+// these will always be published since they will correspond to public urls
 func (r *queryResolver) GetPostByUsernameAndTitle(ctx context.Context, username string, title string) (*model.Post, error) {
 	// the title variable will pull a url-encoded slug, which will need to be unencoded before searching the database
 	unencodedTitle, err := url.QueryUnescape(title)
@@ -644,12 +674,12 @@ func (r *queryResolver) GetPostByUsernameAndTitle(ctx context.Context, username 
 		return nil, err
 	}
 
-	user, err := sql_models.Users(qm.Where("username = ?", username)).One(ctx, database.DB)
+	user, err := sql_models.Users(qm.Where("username = ? AND published = true", username)).One(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
 
-	post, err := user.Posts(qm.Where("title = ?", unencodedTitle)).One(ctx, database.DB)
+	post, err := user.Posts(qm.Where("title = ? AND published = true", unencodedTitle)).One(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -672,13 +702,13 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 	// get posts from DB with optional search by title
 	var posts sql_models.PostSlice
 	if postSearch.Title == nil {
-		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", authorID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ? AND published = true", authorID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset)).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
 		posts = retrievedPosts
 	} else {
-		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ?", authorID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%"+*postSearch.Title+"%")).All(ctx, database.DB)
+		retrievedPosts, err := sql_models.Posts(qm.Where("user_id = ? AND published = true", authorID), qm.Limit(limitPlusOne), qm.Offset(postSearch.Offset), qm.Where("Title ILIKE ?", "%"+*postSearch.Title+"%")).All(ctx, database.DB)
 		if err != nil {
 			return nil, err
 		}
@@ -700,6 +730,7 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 	return &paginatedResponse, nil
 }
 
+// get unpublished posts for the current user - not visible to others
 func (r *queryResolver) GetUnpublishedPosts(ctx context.Context, limit int, offset int) (*model.PaginatedPosts, error) {
 	// get userID from sessions
 	userID, err := middleware.GetUserIDFromSessions(ctx)
@@ -786,6 +817,10 @@ func (r *queryResolver) GetManyUsers(ctx context.Context, userSearch model.UserS
 	return &paginatedResponse, nil
 }
 
+/* -------------------------------------------------------------------------- */
+/*                              get many comments                             */
+/* -------------------------------------------------------------------------- */
+
 func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error) {
 	// cap the maximum possible limit and return with one extra
 	// to check for remaining comments
@@ -844,6 +879,10 @@ func (r *queryResolver) GetManyComments(ctx context.Context, commentSearch model
 	return &paginatedResponse, nil
 }
 
+/* -------------------------------------------------------------------------- */
+/*                          various utility functions    ß                     */
+/* -------------------------------------------------------------------------- */
+
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	_, session, err := middleware.GetGinContextAndSessions(ctx)
 	if err != nil {
@@ -882,7 +921,7 @@ func (r *userResolver) Posts(ctx context.Context, obj *model.User) (*model.Pagin
 	// pagination will limit these to 20 posts
 	// for fetching additional posts, the GetManyPosts resolver can then be used
 	// with the limit and offset set accordingly
-	posts, err := sql_models.Posts(qm.Where("user_id = ?", obj.UserID), qm.Limit(21)).All(ctx, database.DB)
+	posts, err := sql_models.Posts(qm.Where("user_id = ? AND published = true", obj.UserID), qm.Limit(21)).All(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
