@@ -63,12 +63,14 @@ type Post struct {
 	Comments        *PaginatedComments `json:"comments"`
 	Votes           *Votes             `json:"votes"`
 	Deleted         bool               `json:"deleted"`
+	Published       bool               `json:"published"`
 }
 
 type PostInput struct {
-	Title    string  `json:"title"`
-	Subtitle *string `json:"subtitle"`
-	Text     string  `json:"text"`
+	Title     string  `json:"title"`
+	Subtitle  *string `json:"subtitle"`
+	Text      string  `json:"text"`
+	Published bool    `json:"published"`
 }
 
 type PostSearch struct {
@@ -90,6 +92,7 @@ type User struct {
 	Posts     *PaginatedPosts    `json:"posts"`
 	Comments  *PaginatedComments `json:"comments"`
 	CreatedAt time.Time          `json:"created_at"`
+	Active    bool               `json:"active"`
 }
 
 type UserInput struct {

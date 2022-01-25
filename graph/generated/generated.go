@@ -68,22 +68,23 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AccessPasswordReset func(childComplexity int, resetKey string) int
-		AddComment          func(childComplexity int, postID int, responseToCommentID *int, commentText string) int
-		AddPost             func(childComplexity int, postInput model.PostInput, authorID int) int
-		DeleteComment       func(childComplexity int, commentID int) int
-		DeletePost          func(childComplexity int, postID int, authorID int) int
-		EditComment         func(childComplexity int, commentID int, newCommentText string) int
-		EditPost            func(childComplexity int, postID int, postInput model.PostInput, authorID int) int
-		ForgotPassword      func(childComplexity int, username string) int
-		Login               func(childComplexity int, username string, password string) int
-		Logout              func(childComplexity int) int
-		RegisterNewUser     func(childComplexity int, userInput model.UserInput) int
-		ResetPassword       func(childComplexity int, resetKey string, userID int, newPassword string) int
-		RestoreComment      func(childComplexity int, commentID int) int
-		RestorePost         func(childComplexity int, postID int, authorID int) int
-		VoteOnComment       func(childComplexity int, commentID int, voteValue model.VoteValue) int
-		VoteOnPost          func(childComplexity int, postID int, voteValue model.VoteValue) int
+		AccessPasswordReset    func(childComplexity int, resetKey string) int
+		AddComment             func(childComplexity int, postID int, responseToCommentID *int, commentText string) int
+		AddPost                func(childComplexity int, postInput model.PostInput, authorID int) int
+		DeleteComment          func(childComplexity int, commentID int) int
+		DeletePost             func(childComplexity int, postID int, authorID int) int
+		EditComment            func(childComplexity int, commentID int, newCommentText string) int
+		EditPost               func(childComplexity int, postID int, postInput model.PostInput, authorID int) int
+		ForgotPassword         func(childComplexity int, username string) int
+		Login                  func(childComplexity int, username string, password string) int
+		Logout                 func(childComplexity int) int
+		RegisterNewUser        func(childComplexity int, userInput model.UserInput) int
+		ResetPassword          func(childComplexity int, resetKey string, userID int, newPassword string) int
+		RestoreComment         func(childComplexity int, commentID int) int
+		RestorePost            func(childComplexity int, postID int, authorID int) int
+		ToggleUserActiveStatus func(childComplexity int) int
+		VoteOnComment          func(childComplexity int, commentID int, voteValue model.VoteValue) int
+		VoteOnPost             func(childComplexity int, postID int, voteValue model.VoteValue) int
 	}
 
 	PaginatedComments struct {
@@ -107,6 +108,7 @@ type ComplexityRoot struct {
 		Deleted         func(childComplexity int) int
 		PostID          func(childComplexity int) int
 		PostText        func(childComplexity int) int
+		Published       func(childComplexity int) int
 		Subtitle        func(childComplexity int) int
 		Title           func(childComplexity int) int
 		URLEncodedTitle func(childComplexity int) int
@@ -134,6 +136,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Active    func(childComplexity int) int
 		Comments  func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		Email     func(childComplexity int) int
@@ -166,6 +169,7 @@ type MutationResolver interface {
 	VoteOnPost(ctx context.Context, postID int, voteValue model.VoteValue) (*model.PostVote, error)
 	VoteOnComment(ctx context.Context, commentID int, voteValue model.VoteValue) (*model.CommentVote, error)
 	RegisterNewUser(ctx context.Context, userInput model.UserInput) (*model.User, error)
+	ToggleUserActiveStatus(ctx context.Context) (*model.User, error)
 	Login(ctx context.Context, username string, password string) (*model.User, error)
 	Logout(ctx context.Context) (bool, error)
 	ForgotPassword(ctx context.Context, username string) (bool, error)
@@ -472,6 +476,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.RestorePost(childComplexity, args["post_id"].(int), args["author_id"].(int)), true
 
+	case "Mutation.toggleUserActiveStatus":
+		if e.complexity.Mutation.ToggleUserActiveStatus == nil {
+			break
+		}
+
+		return e.complexity.Mutation.ToggleUserActiveStatus(childComplexity), true
+
 	case "Mutation.voteOnComment":
 		if e.complexity.Mutation.VoteOnComment == nil {
 			break
@@ -572,6 +583,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Post.PostText(childComplexity), true
+
+	case "Post.published":
+		if e.complexity.Post.Published == nil {
+			break
+		}
+
+		return e.complexity.Post.Published(childComplexity), true
 
 	case "Post.subtitle":
 		if e.complexity.Post.Subtitle == nil {
@@ -739,6 +757,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Me(childComplexity), true
 
+	case "User.active":
+		if e.complexity.User.Active == nil {
+			break
+		}
+
+		return e.complexity.User.Active(childComplexity), true
+
 	case "User.comments":
 		if e.complexity.User.Comments == nil {
 			break
@@ -870,6 +895,7 @@ type User {
   posts: PaginatedPosts! ## field resolver
   comments: PaginatedComments! ## field resolver
   created_at: Time!
+  active: Boolean!
 }
 
 input UserSearch {
@@ -922,12 +948,14 @@ type Post {
   votes: Votes! ## field resolver
   deleted: Boolean! ## deleted posts will still be stored in the database
   ## to allow for undoing a delete and restoring posts / comments / votes
+  published: Boolean!
 }
 
 input PostInput {
   title: String!
   subtitle: String
   text: String!
+  published: Boolean!
 }
 
 input PostSearch {
@@ -1017,6 +1045,7 @@ type Mutation {
   voteOnComment(comment_id: Int!, vote_value: VoteValue!): CommentVote!
   # authentication:
   registerNewUser(userInput: UserInput!): User!
+  toggleUserActiveStatus: User!
   login(username: String!, password: String!): User!
   logout: Boolean!
   forgotPassword(username: String!): Boolean!
@@ -2513,6 +2542,41 @@ func (ec *executionContext) _Mutation_registerNewUser(ctx context.Context, field
 	return ec.marshalNUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_toggleUserActiveStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ToggleUserActiveStatus(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3299,6 +3363,41 @@ func (ec *executionContext) _Post_deleted(ctx context.Context, field graphql.Col
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Post_published(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Published, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PostVote_post_id(ctx context.Context, field graphql.CollectedField, obj *model.PostVote) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4039,6 +4138,41 @@ func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_active(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Active, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Votes_upvote(ctx context.Context, field graphql.CollectedField, obj *model.Votes) (ret graphql.Marshaler) {
@@ -5313,6 +5447,14 @@ func (ec *executionContext) unmarshalInputPostInput(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "published":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("published"))
+			it.Published, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -5652,6 +5794,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "toggleUserActiveStatus":
+			out.Values[i] = ec._Mutation_toggleUserActiveStatus(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5871,6 +6018,11 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			})
 		case "deleted":
 			out.Values[i] = ec._Post_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "published":
+			out.Values[i] = ec._Post_published(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -6119,6 +6271,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			})
 		case "created_at":
 			out.Values[i] = ec._User_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "active":
+			out.Values[i] = ec._User_active(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}

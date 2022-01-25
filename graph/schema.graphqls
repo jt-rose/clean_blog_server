@@ -69,6 +69,7 @@ input PostInput {
   title: String!
   subtitle: String
   text: String!
+  published: Boolean!
 }
 
 input PostSearch {
@@ -158,6 +159,7 @@ type Mutation {
   voteOnComment(comment_id: Int!, vote_value: VoteValue!): CommentVote!
   # authentication:
   registerNewUser(userInput: UserInput!): User!
+  toggleUserActiveStatus: User!
   login(username: String!, password: String!): User!
   logout: Boolean!
   forgotPassword(username: String!): Boolean!

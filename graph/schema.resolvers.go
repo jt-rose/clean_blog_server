@@ -51,7 +51,6 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 		return nil, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
 	}
 
-	
 	// attenpt to add new post
 	newPost := sql_models.Post{
 		UserID:   userID,
@@ -396,6 +395,30 @@ func (r *mutationResolver) RegisterNewUser(ctx context.Context, userInput model.
 	}
 
 	return &formattedUser, err
+}
+
+func (r *mutationResolver) ToggleUserActiveStatus(ctx context.Context) (*model.User, error) {
+	// authenticate user
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// find current user status
+	user, err := sql_models.FindUser(ctx, database.DB, userID)
+	if err != nil {
+		return nil, err
+	}
+	// toggle active status for user
+	user.Active = !user.Active
+	_, err = user.Update(ctx, database.DB, boil.Infer())
+	if err != nil {
+		return nil, err
+	}
+
+	// format as graphql response
+	fmtUser := utils.ConvertUser(user)
+	return &fmtUser, nil
 }
 
 func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.User, error) {
