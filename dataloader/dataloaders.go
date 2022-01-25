@@ -194,7 +194,7 @@ func LoadCommentsByUserID(ctx context.Context) func(ids []int) ([]model.Paginate
 		queryParam := utils.FormatSliceForSQLParams(ids)
 
 		// attempt to fetch user comments
-		comments, err := sql_models.Comments(qm.Where("user_id = ANY(?::int[])", queryParam)).All(ctx, database.DB)
+		comments, err := sql_models.Comments(qm.Where("user_id = ANY(?::int[]) AND deleted = false", queryParam)).All(ctx, database.DB)
 		if err != nil {
 			return nil, []error{err}
 		}
