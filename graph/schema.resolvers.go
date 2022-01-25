@@ -56,6 +56,7 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 		UserID:   userID,
 		Title:    postInput.Title,
 		PostText: postInput.Text,
+		Published: postInput.Published,
 	}
 
 	if postInput.Subtitle != nil {
@@ -92,6 +93,7 @@ func (r *mutationResolver) EditPost(ctx context.Context, postID int, postInput m
 	currentPost.Title = postInput.Title
 	currentPost.Subtitle = *postInput.Subtitle
 	currentPost.PostText = postInput.Text
+	currentPost.Published = postInput.Published
 
 	_, err = currentPost.Update(ctx, database.DB, boil.Infer())
 	if err != nil {
