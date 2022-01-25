@@ -53,9 +53,9 @@ func (r *mutationResolver) AddPost(ctx context.Context, postInput model.PostInpu
 
 	// attenpt to add new post
 	newPost := sql_models.Post{
-		UserID:   userID,
-		Title:    postInput.Title,
-		PostText: postInput.Text,
+		UserID:    userID,
+		Title:     postInput.Title,
+		PostText:  postInput.Text,
 		Published: postInput.Published,
 	}
 
@@ -602,6 +602,15 @@ func (r *queryResolver) GetPost(ctx context.Context, postID int) (*model.Post, e
 		return nil, err
 	}
 
+	// check if post is published
+	// if unpublished, confirm user is author and authenticated
+	if !post.Published {
+		err = middleware.RejectIfNotAuthor(ctx, post.UserID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	formattedPost := utils.ConvertPost(post)
 	return &formattedPost, nil
 }
@@ -674,6 +683,50 @@ func (r *queryResolver) GetManyPosts(ctx context.Context, postSearch model.PostS
 			return nil, err
 		}
 		posts = retrievedPosts
+	}
+
+	// format posts for graphQL response
+	formattedPosts := make([]*model.Post, len(posts))
+	for i, value := range posts {
+		fmtPost := utils.ConvertPost(value)
+		formattedPosts[i] = &fmtPost
+	}
+
+	paginatedResponse := model.PaginatedPosts{
+		Posts: formattedPosts,
+		More:  len(posts) == limitPlusOne,
+	}
+
+	return &paginatedResponse, nil
+}
+
+func (r *queryResolver) GetUnpublishedPosts(ctx context.Context, limit int, offset int) (*model.PaginatedPosts, error) {
+	// get userID from sessions
+	userID, err := middleware.GetUserIDFromSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// reject if unauthenticated
+	if userID == 0 {
+		return nil, errors.New(constants.ONLY_AUTHOR_ALLOWED_ERROR_MESSAGE)
+	}
+
+	// cap the maximum possible limit and return with one extra
+	// to check for remaining posts
+	var limitPlusOne int
+	trueLimit := 20
+	if limit > trueLimit {
+		limitPlusOne = trueLimit + 1
+	} else {
+		limitPlusOne = limit + 1
+	}
+
+	// get unpublished posts for user
+	// ignore title parameter of postInput, as these should be a fairly small number
+	posts, err := sql_models.Posts(qm.Where("user_id = ? AND published = false", userID), qm.Limit(limitPlusOne), qm.Offset(offset)).All(ctx, database.DB)
+	if err != nil {
+		return nil, err
 	}
 
 	// format posts for graphQL response

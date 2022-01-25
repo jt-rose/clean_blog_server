@@ -125,8 +125,8 @@ func ConfirmAuthor(ctx context.Context, authorID int) (bool, int, error) {
 	return isAuthor, userID, nil
 }
 
-func RejectIfNotAuthor(ctx context.Context, userID int) (error) {
-	isAuthor, userID, err := ConfirmAuthor(ctx, userID)
+func RejectIfNotAuthor(ctx context.Context, authorID int) (error) {
+	isAuthor, _, err := ConfirmAuthor(ctx, authorID)
 		if err != nil {
 			return err
 		}

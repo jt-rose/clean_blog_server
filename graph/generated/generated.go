@@ -129,6 +129,7 @@ type ComplexityRoot struct {
 		GetManyUsers              func(childComplexity int, userSearch model.UserSearch) int
 		GetPost                   func(childComplexity int, postID int) int
 		GetPostByUsernameAndTitle func(childComplexity int, username string, title string) int
+		GetUnpublishedPosts       func(childComplexity int, limit int, offset int) int
 		GetUser                   func(childComplexity int, userID int) int
 		GetUserByUsername         func(childComplexity int, username string) int
 		IsAuthor                  func(childComplexity int, authorID int) int
@@ -190,6 +191,7 @@ type QueryResolver interface {
 	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
 	GetPostByUsernameAndTitle(ctx context.Context, username string, title string) (*model.Post, error)
 	GetManyPosts(ctx context.Context, postSearch model.PostSearch, authorID int) (*model.PaginatedPosts, error)
+	GetUnpublishedPosts(ctx context.Context, limit int, offset int) (*model.PaginatedPosts, error)
 	GetManyUsers(ctx context.Context, userSearch model.UserSearch) (*model.PaginatedUsers, error)
 	GetManyComments(ctx context.Context, commentSearch model.CommentSearch) (*model.PaginatedComments, error)
 	Me(ctx context.Context) (*model.User, error)
@@ -714,6 +716,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetPostByUsernameAndTitle(childComplexity, args["username"].(string), args["title"].(string)), true
 
+	case "Query.getUnpublishedPosts":
+		if e.complexity.Query.GetUnpublishedPosts == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getUnpublishedPosts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetUnpublishedPosts(childComplexity, args["limit"].(int), args["offset"].(int)), true
+
 	case "Query.getUser":
 		if e.complexity.Query.GetUser == nil {
 			break
@@ -1021,6 +1035,7 @@ type Query {
   ## but for more intuitive routing (blog/myusername vs blog/2), username will be preferred
   getPostByUsernameAndTitle(username: String!, title: String!): Post
   getManyPosts(postSearch: PostSearch!, author_id: Int!): PaginatedPosts!
+  getUnpublishedPosts(limit: Int!, offset: Int!): PaginatedPosts!
   getManyUsers(userSearch: UserSearch!): PaginatedUsers!
   getManyComments(commentSearch: CommentSearch!): PaginatedComments! # field resolver
   # authentication:
@@ -1507,6 +1522,30 @@ func (ec *executionContext) field_Query_getPost_args(ctx context.Context, rawArg
 		}
 	}
 	args["post_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getUnpublishedPosts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -3685,6 +3724,48 @@ func (ec *executionContext) _Query_getManyPosts(ctx context.Context, field graph
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().GetManyPosts(rctx, args["postSearch"].(model.PostSearch), args["author_id"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PaginatedPosts)
+	fc.Result = res
+	return ec.marshalNPaginatedPosts2ᚖgithubᚗcomᚋjtᚑroseᚋclean_blog_serverᚋgraphᚋmodelᚐPaginatedPosts(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getUnpublishedPosts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getUnpublishedPosts_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetUnpublishedPosts(rctx, args["limit"].(int), args["offset"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6142,6 +6223,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getManyPosts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "getUnpublishedPosts":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getUnpublishedPosts(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
