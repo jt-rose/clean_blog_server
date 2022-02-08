@@ -674,7 +674,7 @@ func (r *queryResolver) GetPostByUsernameAndTitle(ctx context.Context, username 
 		return nil, err
 	}
 
-	user, err := sql_models.Users(qm.Where("username = ? AND published = true", username)).One(ctx, database.DB)
+	user, err := sql_models.Users(qm.Where("username = ? AND active = true", username)).One(ctx, database.DB)
 	if err != nil {
 		return nil, err
 	}
