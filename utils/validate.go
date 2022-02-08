@@ -12,8 +12,9 @@ import (
 
 func ValidateEmail(email string) error {
 	// match *@*.*
-	match, _ := regexp.MatchString(`^\w+@\w+\.\w+$`, email)
-	if match {
+	re := regexp.MustCompile(`^\w+@\w+\.\w+$`)
+	match := re.MatchString(email)
+	if !match {
 		return errors.New(constants.INVALID_EMAIL_ERROR_MESSAGE)
 	}
 	return nil
